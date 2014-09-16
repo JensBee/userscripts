@@ -51,7 +51,6 @@ function injected() {
     var creds = $('#artist-credit-bubble bdi').size(); // number of existing credits
     for (var i = 0, j = creds; i < data[1].length; i++, j++) {
       $('.add-artist-credit').click();
-      //var j = creds + i;
       var val = data[1][i].trim();
       $('#ac-artist-search-' + j).val(val);
       $('#ac-as-credited-' + j).val(val);
