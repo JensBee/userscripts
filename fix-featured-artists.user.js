@@ -25,20 +25,16 @@ function injected() {
     
     var titleStr = $('#id-edit-recording\\.name').val();
     var parts = titleStr.match(/^(.*)\s+\(feat\. (.*?)\)(.*)$/);
-    var data = [];
+    var data;
 
     if (parts) {
-      data[0] = parts[1]; // title
-      data[1] = parts[2]; // feats
-      data[2] = parts[3]; // additional
+      data = [parts[1], parts[2], parts[3]]; // title, feats, additional
     } else {
       parts = titleStr.match(/^(.*)\s+\((.*)\)\s+\(feat\. (.*?)\)$/);
       if (!parts) {
         return;
       }
-      data[0] = parts[1]; // title
-      data[1] = parts[3]; // feats
-      data[2] = parts[2]; // additional
+      data = [parts[1], parts[3], parts[2]]; // title, feats, additional
     }
     data[1] = data[1].split(/[,&]/);
        
