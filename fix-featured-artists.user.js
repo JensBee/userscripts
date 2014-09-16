@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name MusicBrainz: Fix featured artists.
 // @description	Adds a button to record editing page to move featured artists from the track title to the artist name. Recognizes strings formatted like '(feat. NAME)'. Multiple featured artists will be automatically split at ',' and '&'. The button is only shown if the string 'feat.' is found in the track title.
-// @version 1.1
+// @version 1.2
 // @supportURL https://github.com/JensBee/userscripts
 // @license MIT
 // @namespace http://www.jens-bertram.net/userscripts/fix-featured-artists
