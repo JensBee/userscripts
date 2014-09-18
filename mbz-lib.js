@@ -3,7 +3,7 @@
 // @namespace   http://www.jens-bertram.net/userscripts/mbz-lib
 // @description Musicbrainz function library.
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @version     0.1.1beta
+// @version     0.1.2beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
@@ -171,7 +171,7 @@ MBZ.Release = function() {
 			name = MBZ.asString(name);
 			catNo = MBZ.asString(catNo);
 
-			if (name != '' && catNo != '') {
+			if (name != '' || catNo != '') {
 				data.labels.push([name, catNo]);
 				return true;
 			}
