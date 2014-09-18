@@ -4,7 +4,7 @@
 // @description Import audio files and collections into Musicbrainz.
 // @include     *://archive.org/details/*
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @version     0.2beta
+// @version     0.2.1beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
@@ -122,7 +122,7 @@ var parse = {
           }
           if ((tracks[title] && isNaN(tracks[title])) || (!tracks[title])) {
             tracks[title] = {
-              num: trackCount,
+              num: track,
               length: length
             };
             trackCount++;
