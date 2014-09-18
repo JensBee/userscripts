@@ -1,11 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name        MusicBrainz: Archive.org importer
 // @namespace   http://www.jens-bertram.net/userscripts/import-internetarchive
 // @description Import audio files and collections into Musicbrainz.
 // @include     *://archive.org/details/*
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @require			https://github.com/JensBee/userscripts/raw/master/mbz-lib.js
-// @version     0.2.2beta
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
+// @version     0.2.3beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
@@ -111,7 +111,7 @@ if ($('body').hasClass('Audio')) { // basic data type check
     if (data.metadata.mediatype[0] == 'audio') {
       var btn = $('<button type="button">MusicBrainz import</button>');
       btn.click(function () {
-        release.submit();
+        release.submitRelease();
       });
       $('.breadcrumbs').append('&nbsp;').append(btn);
       // *** static data
@@ -127,6 +127,6 @@ if ($('body').hasClass('Audio')) { // basic data type check
       parse.annotation(data);
       parse.tracks(data);
     }
-    release.dump();
+    //release.dump();
   });
 }
