@@ -4,21 +4,13 @@
 // @description Import audio files and collections into Musicbrainz.
 // @include     *://archive.org/details/*
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @version     0.2.1beta
+// @require			https://github.com/JensBee/userscripts/raw/master/mbz-lib.js
+// @version     0.2.2beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
 // ==/UserScript==
-var form = $('<form method="post" id="mbImport" target="_blank" action="https://musicbrainz.org/release/add" acceptCharset="UTF-8"></form>');
-function addField(name, value, escape) {
-  if (escape) {
-    form.append($('<input type="hidden" name="' + name + '" value="' +
-    value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    + '"/>'));
-  } else {
-    form.append($('<input type="hidden" name="' + name + '" value="' + value + '"/>'));
-  }
-}
+var release = new MBZ.Release();
 function isAudioFile(formatStr) {
   // https://archive.org/about/faqs.php#Audio
   var formats = [
@@ -41,69 +33,45 @@ function isAudioFile(formatStr) {
 var parse = {
   annotation: function (data) {
     if (data.metadata.notes) {
-      console.log('+annotation');
-      addField('annotation', data.metadata.notes[0], true);
-    } else {
-      console.log('-annotation');
+      release.setAnnotation(data.metadata.notes[0]);
     }
   },
   artists: function (data) {
     if (data.metadata.creator) {
-      console.log('+artists');
       $.each(data.metadata.creator, function (idx, val) {
-        addField('artist_credit.names.' + idx + '.name', val);
+        release.addArtist(val);
       });
-    } else {
-      console.log('-artists');
     }
   },
   labels: function (data) {
     if (data.metadata.collection) {
-      console.log('+labels');
       $.each(data.metadata.collection, function (idx, val) {
-        addField('labels.' + idx + '.name', val);
-        addField('labels.' + idx + '.catalog_number', data.metadata.identifier[0]);
+        release.addLabel(val, data.metadata.identifier[0]);
       });
-    } else {
-      console.log('-labels');
     }
   },
   release: function (data) {
     var dates = data.metadata.date || data.metadata.publicdate;
     if (dates) {
-      console.log('+release');
       $.each(dates, function (idx, val) {
         var date = val.match(/([0-9]{4})-([0-9]{2})-([0-9]{2}).*/);
         if (date.length == 4) {
-          var prefix = 'events.' + idx + '.';
-          addField(prefix + 'date.year', date[1]);
-          addField(prefix + 'date.month', date[2]);
-          addField(prefix + 'date.day', date[3]);
-          addField(prefix + 'country', 'XW'); // worldwide
+          release.addRelease(date[1], date[2], date[3], 'XW');
         }
       });
-    } else {
-      console.log('-release');
     }
   },
   urls: function (data) {
-    console.log('+urls');
     var url = $(location).attr('href');
-    addField('urls.0.url', url);
-    addField('urls.0.link_type', '75'); // download for free
-    addField('urls.1.url', url);
-    addField('urls.1.link_type', '85'); // stream for free
+    release.addUrl(url, '75');
+    release.addUrl(url, '85');
     if (data.creativecommons.license_url) {
-      addField('urls.2.url', data.creativecommons.license_url);
-      addField('urls.2.link_type', '301'); // license
+      release.addUrl(data.creativecommons.license_url, '301');
     }
   },
   title: function (data) {
     if (data.metadata.title) {
-      console.log('+title');
-      addField('name', data.metadata.title[0]);
-    } else {
-      console.log('-title');
+      release.setTitle(data.metadata.title[0]);
     }
   },
   tracks: function (data) {
@@ -111,56 +79,45 @@ var parse = {
     };
     var trackCount = 0;
     if (data.files) {
-      console.log('+tracks');
       $.each(data.files, function (idx, val) {
         var title = val.title;
         if (isAudioFile(val.format) && title) {
-          var length = Math.round(parseFloat(val.length) * 1000);
+          var ttime = 'NaN';
+          if (val['length']) {
+            if (val['length'].indexOf('.') > - 1) {
+              // length expressed in seconds
+              ttime = val['length'];
+            } else if (val['length'].indexOf(':') > - 1) {
+              // length expressed in HH:MM:SS
+              ttime = MBZ.hmsToSeconds(val['length']);
+            }
+            ttime = Math.round(parseFloat(ttime) * 1000); // sec to msec
+          }
           var track = (parseInt(val.track) - 1); // count starts at 1, on MB at 0
           if (isNaN(track)) {
             track = trackCount + 1;
           }
-          if ((tracks[title] && isNaN(tracks[title])) || (!tracks[title])) {
-            tracks[title] = {
-              num: track,
-              length: length
-            };
+          if (release.addTrack(0, title, track, ttime) == 1) {
             trackCount++;
           }
         }
       });
-      var trackCount = 0;
-      for (var title in tracks) {
-        if (tracks.hasOwnProperty(title)) {
-          var prefix = 'mediums.0.track.' + tracks[title].num + '.';
-          addField(prefix + 'name', title);
-          var length = tracks[title].length;
-          if (!isNaN(length)) {
-            addField(prefix + 'length', tracks[title].length);
-          }
-          trackCount++;
-        }
-      }
-    } else {
-      console.log('-tracks');
     }
   }
 };
 if ($('body').hasClass('Audio')) { // basic data type check
-  $('body').append(form);
   $.getJSON($(location).attr('href') + '&output=json', function (data) {
-    // console.log(data);
     // additional data type check
     if (data.metadata.mediatype[0] == 'audio') {
       var btn = $('<button type="button">MusicBrainz import</button>');
       btn.click(function () {
-        $('#mbImport').submit()
+        release.submit();
       });
       $('.breadcrumbs').append('&nbsp;').append(btn);
       // *** static data
-      addField('mediums.0.format', 'Digital Media'); // digital media
-      addField('packaging', 'none');
-      addField('edit_note', 'Imported from The Internet Archive (' + $(location).attr('href') + ')');
+      release.addMediumFormat(0, 'Digital Media');
+      release.setPackaging('none');
+      release.setNote('Imported from The Internet Archive (' + $(location).attr('href') + ')');
       // *** parsed data
       parse.urls(data);
       parse.artists(data);
@@ -170,5 +127,6 @@ if ($('body').hasClass('Audio')) { // basic data type check
       parse.annotation(data);
       parse.tracks(data);
     }
+    release.dump();
   });
 }
