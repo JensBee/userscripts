@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name MusicBrainz: Fix featured artists.
-// @description	Adds a button to record and release editing pages to move featured artists from the track title to the artist name. Recognizes strings formatted like '(feat. NAME)'. Multiple featured artists will be automatically split at ',' and '&'. The button is only shown on recording edit page if the string 'feat.' is found in the track title.
-// @version 1.3
+// @description	Adds a button to record editing page to move featured artists from the track title to the artist name. Recognizes strings formatted like '(feat. NAME)'. Multiple featured artists will be automatically split at ',' and '&'. The button is only shown if the string 'feat.' is found in the track title.
+// @version 1.4
 // @supportURL https://github.com/JensBee/userscripts
 // @license MIT
 // @namespace http://www.jens-bertram.net/userscripts/fix-featured-artists
@@ -21,7 +21,6 @@ var path = window.location.pathname;
 var btn = $('<input type="button" title="Fix featured artist names given in track title." id="jb-fix-featured-btn"/>');
 if (path.startsWith('/recording/')) {
   // recording page
-  console.log('REC mode');
   var title = $('#id-edit-recording\\.name');
   if (title.length > 0 && title.val().toLowerCase().indexOf('feat.') > - 1) {
     title.after('<div class="row" id="jb-fix-featured-row"><label>&nbsp;</label></div>');
@@ -49,7 +48,6 @@ if (path.startsWith('/recording/')) {
   }
 } else {
   // release page
-  console.log('REL mode');
   btn.attr('value', 'Fix');
   $('#track-ac-bubble>.buttons').filter(':first').append(btn);
   btn.click(function () {
@@ -81,6 +79,13 @@ function strNotEmpty(str) {
 }
 function getParts(titleStr) {
   var parts = titleStr.match(/^(.*)\s+\(feat\. (.*?)\)(.*)$/i);
+  if (!parts) {
+    parts = titleStr.match(/^(.*)\s+feat. (.*)$/i);
+    if (!parts) {
+      return;
+    }
+    parts[3] = "";
+  }
   var data;
   if (parts) {
     data = [
