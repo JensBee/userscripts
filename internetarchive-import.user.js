@@ -4,7 +4,7 @@
 // @description Import audio files and collections into Musicbrainz.
 // @include     *://archive.org/details/*
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @require			https://github.com/JensBee/userscripts/raw/master/mbz-lib.js
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
 // @version     0.2.2beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
