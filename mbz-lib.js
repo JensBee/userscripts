@@ -3,7 +3,7 @@
 // @namespace   http://www.jens-bertram.net/userscripts/mbz-lib
 // @description Musicbrainz function library.
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @version     0.1.3beta
+// @version     0.1.4beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
@@ -52,7 +52,7 @@ window.MBZ = {
 	 * Remove a trailing slash from a string
 	 * @str string
 	 */
-	function rmTrSlash(str) {
+	rmTrSlash: function (str) {
     if(str.substr(-1) == '/') {
         return str.substr(0, str.length - 1);
     }
