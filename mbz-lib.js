@@ -3,7 +3,7 @@
 // @namespace   http://www.jens-bertram.net/userscripts/mbz-lib
 // @description Musicbrainz function library.
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @version     0.1.2beta
+// @version     0.1.3beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
