@@ -5,7 +5,7 @@
 // @include     *://archive.org/details/*
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
 // @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
-// @version     0.2.3beta
+// @version     0.2.4beta
 // @grant       none
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
