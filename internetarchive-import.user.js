@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name        MusicBrainz: Archive.org importer
 // @namespace   http://www.jens-bertram.net/userscripts/import-internetarchive
 // @description Import audio files and collections into Musicbrainz.
@@ -106,7 +106,7 @@ var parse = {
   }
 };
 if ($('body').hasClass('Audio')) { // basic data type check
-  $.getJSON($(location).attr('href') + '&output=json', function (data) {
+  $.getJSON(MBZ.rmTrSlash($(location).attr('href')) + '&output=json', function (data) {
     // additional data type check
     if (data.metadata.mediatype[0] == 'audio') {
       var btn = $('<button type="button">MusicBrainz import</button>');
