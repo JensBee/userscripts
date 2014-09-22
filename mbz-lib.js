@@ -11,6 +11,7 @@
 window.MBZ = {
 	/**
 	 * Convert anything to string.
+	 * @data object
 	 */
 	asString: function(data) {
 		if (data == null) {
@@ -34,6 +35,7 @@ window.MBZ = {
 	/**
 	 * Convert HH:MM:SS, MM:SS, SS to seconds.
 	 * http://stackoverflow.com/a/9640417
+	 * @str string
 	 */
 	hmsToSeconds: function (str) {
     var p = str.split(':'), s = 0, m = 1;
@@ -44,6 +46,17 @@ window.MBZ = {
     }
 
 		return s;
+	},
+
+	/**
+	 * Remove a trailing slash from a string
+	 * @str string
+	 */
+	function rmTrSlash(str) {
+    if(str.substr(-1) == '/') {
+        return str.substr(0, str.length - 1);
+    }
+    return str;
 	}
 };
 
