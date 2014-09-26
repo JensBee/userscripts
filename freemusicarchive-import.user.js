@@ -1,10 +1,11 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name        MusicBrainz: FreeMusicArchive.org importer
 // @namespace   http://www.jens-bertram.net/userscripts/import-fma
 // @description Import releases from Free Music Archive
 // @supportURL  https://github.com/JensBee/userscripts
+// @icon        http://blogfiles.wfmu.org/JI/FMAlogo_web_white.jpg
 // @license     MIT
-// @version     0.1beta
+// @version     0.1.1beta
 //
 // @grant       none
 // @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
