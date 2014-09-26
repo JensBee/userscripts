@@ -30,7 +30,7 @@ mbz.archive_org_importer = {
   /**
     * Insert a link, if a release has MusicBrainz relations.
     * @data key=mbid value=string array: relation types
-    * @target target jQuery element to append (optional) or this.bmLinkTarget set in scope
+    * @target target jQuery element to append (optional) or this.mbLinkTarget set in scope
     */
   insertMBLink: function(data, target) {
     if (data) {
