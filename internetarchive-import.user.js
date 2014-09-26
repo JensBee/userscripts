@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.3.0beta
+// @version     0.3.1beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -243,7 +243,7 @@ mbz.archive_org_importer.release = {
         var self = this;
         $.each(dates, function (idx, val) {
           var date = val.match(/([0-9]{4})-([0-9]{2})-([0-9]{2}).*/);
-          if (date.length == 4) {
+          if (date && date.length == 4) {
             self.release.addRelease({
               y: date[1],
               m: date[2],
