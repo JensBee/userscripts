@@ -525,6 +525,62 @@ MBZ.Release.getUrlRelations = function(params) {
   });
 };
 
+/**
+  * Insert a link, if a release has MusicBrainz relations.
+  * @data key=mbid value=string array: relation types
+  * @target target jQuery element to append (optional) or this.mbLinkTarget set in scope
+  */
+MBZ.Release.insertMBLink = function(data, target) {
+  if (data) {
+    var self = this;
+    target = target || self.mbLinkTarget;
+    if (!target) {
+      return;
+    }
+    $.each(data, function(k, v) {
+      if (!k.startsWith('_')) { // skip internal data
+        var relLink = MBZ.Html.getLinkElement({
+          type: 'release',
+          id: k,
+          title: "Linked as: " + v.toString(),
+          before: '&nbsp;'
+        });
+        target.after(relLink);
+        var editLink = MBZ.Html.getLinkElement({
+          type: 'release',
+          id: k,
+          more: 'edit',
+          text: 'edit',
+          title: 'Edit release',
+          before: ', ',
+          icon: false
+        });
+        var artLinkTitle = 'set';
+        $.ajax({
+          url: MBZ.CA.getLink({
+            type: 'release',
+            id: k,
+            more: 'front'
+          })
+        }).success(function(){
+          artLinkTitle = 'edit';
+        }).always(function() {
+          var artLink = MBZ.Html.getLinkElement({
+            type: 'release',
+            id: k,
+            more: 'cover-art',
+            text: artLinkTitle + ' art',
+            title: artLinkTitle + ' cover art for release',
+            before: ', ',
+            icon: false
+          });
+          relLink.after('<sup> ' + v.length + editLink.html() + artLink.html() + '</sup>');
+        });
+      }
+    });
+  }
+};
+
 MBZ.Release.prototype = {
   /**
     * Add an artist entry.

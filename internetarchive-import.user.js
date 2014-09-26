@@ -28,62 +28,6 @@ mbz.archive_org_importer = {
     'weba'],
 
   /**
-    * Insert a link, if a release has MusicBrainz relations.
-    * @data key=mbid value=string array: relation types
-    * @target target jQuery element to append (optional) or this.mbLinkTarget set in scope
-    */
-  insertMBLink: function(data, target) {
-    if (data) {
-      var self = this;
-      target = target || self.mbLinkTarget;
-      if (!target) {
-        return;
-      }
-      $.each(data, function(k, v) {
-        if (!k.startsWith('_')) { // skip internal data
-          var relLink = MBZ.Html.getLinkElement({
-            type: 'release',
-            id: k,
-            title: "Linked as: " + v.toString(),
-            before: '&nbsp;'
-          });
-          target.after(relLink);
-          var editLink = MBZ.Html.getLinkElement({
-            type: 'release',
-            id: k,
-            more: 'edit',
-            text: 'edit',
-            title: 'Edit release',
-            before: ', ',
-            icon: false
-          });
-          var artLinkTitle = 'set';
-          $.ajax({
-            url: MBZ.CA.getLink({
-              type: 'release',
-              id: k,
-              more: 'front'
-            })
-          }).success(function(){
-            artLinkTitle = 'edit';
-          }).always(function() {
-            var artLink = MBZ.Html.getLinkElement({
-              type: 'release',
-              id: k,
-              more: 'cover-art',
-              text: artLinkTitle + ' art',
-              title: artLinkTitle + ' cover art for release',
-              before: ', ',
-              icon: false
-            });
-            relLink.after('<sup> ' + v.length + editLink.html() + artLink.html() + '</sup>');
-          });
-        }
-      });
-    }
-  },
-
-  /**
     * Check file type for audio format.
     * @formatStr file format name
     */
@@ -183,7 +127,7 @@ mbz.archive_org_importer.linkCheck = {
         var link = $(link);
         if (link.attr('href') == res) {
           self.status.matched.text(self.links.matched++);
-          mbz.archive_org_importer.insertMBLink(data, link);
+          MBZ.Release.insertMBLink(data, link);
         }
       });
     },
@@ -260,7 +204,7 @@ mbz.archive_org_importer.release = {
     self.mbLinkTarget = self.btn;
     MBZ.Release.getUrlRelations({
       urls: MBZ.Util.expandProtocol(url),
-      cb: mbz.archive_org_importer.insertMBLink,
+      cb: MBZ.Release.insertMBLink,
       scope: self
     });
   },
