@@ -14,6 +14,10 @@ MBZ.baseUrl = 'https://musicbrainz.org/';
 MBZ.iconUrl = MBZ.baseUrl + 'favicon.ico',
 
 MBZ.Html = {
+	/**
+		* Add CSS entry to pages <head/>.
+		* @param style definition to add
+		*/
 	_addGlobalStyle: function(css) {
 		if ($('head').length == 0) {
 			$('body').append($('<head>'));
@@ -42,18 +46,49 @@ MBZ.Html = {
 		);
 	},
 
-	getLink: function (type, id, more) {
-		more = more || '';
-		return MBZ.baseUrl + type + '/' + id + more;
+	/**
+		* Create a MusicBrainz link.
+		*	@params[type] type to link to (e.g. release)
+		* @params[id] mbid to link to (optional)
+		* @params[more] stuff to add after mbid + '/' (optional)
+		* @return plain link text
+		*/
+	getLink: function (params) {
+		return MBZ.baseUrl + params.type + '/' + (params.id ? params.id + '/' : '') + (params.more || '');
 	},
 
-	getLinkElement: function (type, id, title) {
-		var el = $('<a>' + this.mbzIcon + '</a>');
-		el.attr('href', this.getLink(type, id)).attr('target', '_blank');
-		if (title) {
-			el.attr('title', title);
+	/**
+		* Create a MusicBrainz link.
+		*	@params[type] type to link to (e.g. release)
+		* @params[id] mbid to link to (optional)
+		* @params[more] stuff to add after mbid + '/' (optional)
+		* @params[title] link title attribute (optional)
+		* @params[text] link text (optional)
+		* @params[before] stuff to put before link (optional)
+		* @params[after] stuff to put after link (optional)
+		* @params[icon] true/false: include MusicBrainz icon (optional, default: true)
+		* @return link jQuery object
+		*/
+	getLinkElement: function (params) {
+		params.icon = (typeof params.icon !== 'undefined' && params.icon == false ? false : true);
+		var retEl = $('<div style="display:inline-block;">');
+		if (params.before) {
+			retEl.append(params.before);
 		}
-		return el;
+		var linkEl = $('<a>' + (params.icon ? this.mbzIcon : '') + (params.text || '') + '</a>');
+		linkEl.attr('href', this.getLink({
+			type: params.type,
+			id: params.id,
+			more: params.more
+		})).attr('target', '_blank');
+		if (params.title) {
+			linkEl.attr('title', params.title);
+		}
+		retEl.append(linkEl);
+		if (params.after) {
+			retEl.append(params.after);
+		}
+		return retEl;
 	},
 
 	getMbzButton: function(caption, title) {
@@ -162,8 +197,14 @@ MBZ.CA = {
 	// no https here (bad_cert notice)
 	originBaseUrl: 'https://cors-anywhere.herokuapp.com/coverartarchive.org:443/',
 
-	getLink: function (type, id, more) {
-		return this.originBaseUrl + type + '/' + id + '/' + (more || '');
+	/**
+		* Create a CoverArtArchive link.
+		*	@params[type] type to link to (e.g. release)
+		* @params[id] mbid to link to (optional)
+		* @params[more] stuff to add after mbid (optional)
+		*/
+	getLink: function (params) {
+		return this.originBaseUrl + params.type + '/' + (params.id ? params.id + '/' : '') + (params.more || '');
 	},
 };
 
