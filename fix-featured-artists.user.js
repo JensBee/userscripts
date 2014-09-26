@@ -1,20 +1,21 @@
-// ==UserScript==
-// @name MusicBrainz: Fix featured artists.
-// @description	Adds a button to record editing page to move featured artists from the track title to the artist name. Recognizes strings formatted like '(feat. NAME)'. Multiple featured artists will be automatically split at ',' and '&'. The button is only shown if the string 'feat.' is found in the track title.
-// @version 1.4
-// @supportURL https://github.com/JensBee/userscripts
-// @license MIT
-// @namespace http://www.jens-bertram.net/userscripts/fix-featured-artists
-// @grant none
+﻿// ==UserScript==
+// @name        MusicBrainz: Fix featured artists.
+// @description Adds a button to record editing page to move featured artists from the track title to the artist name. Recognizes strings formatted like '(feat. NAME)'. Multiple featured artists will be automatically split at ',' and '&'. The button is only shown if the string 'feat.' is found in the track title.
+// @supportURL  https://github.com/JensBee/userscripts
+// @namespace   http://www.jens-bertram.net/userscripts/fix-featured-artists
+// @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
+// @license     MIT
+// @version     1.4
 //
-// @include		*://musicbrainz.org/recording/*/edit
-// @include		*://*.musicbrainz.org/recording/*/edit
-// @include		*://musicbrainz.org/recording/create
-// @include		*://*.musicbrainz.org/recording/create
-// @include		*://musicbrainz.org/release/*/edit
-// @include		*://*.musicbrainz.org/release/*/edit
-// @include		*://musicbrainz.org/release/add
-// @include		*://*.musicbrainz.org/release/add
+// @grant       none
+// @include     *://musicbrainz.org/recording/*/edit
+// @include     *://*.musicbrainz.org/recording/*/edit
+// @include     *://musicbrainz.org/recording/create
+// @include     *://*.musicbrainz.org/recording/create
+// @include     *://musicbrainz.org/release/*/edit
+// @include     *://*.musicbrainz.org/release/*/edit
+// @include     *://musicbrainz.org/release/add
+// @include     *://*.musicbrainz.org/release/add
 // ==/UserScript==
 //**************************************************************************//
 var path = window.location.pathname;
