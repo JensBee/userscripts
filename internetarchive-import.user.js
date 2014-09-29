@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4beta
+// @version     0.4.1beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -180,6 +180,7 @@ mbz.archive_org_importer.release = {
     var url = MBZ.Util.rmTrSlash($(location).attr('href'));
     var urlJSON = url + '&output=json';
     var trackData = $.parseJSON('[' + playerJSON[1] + ']');
+    var pageJSON = null; // page data as JSON object
 
     this.btn.click(function () {
       if (!self.importInitialized) {
@@ -187,11 +188,13 @@ mbz.archive_org_importer.release = {
         self.btn.text("Initializing import");
         // prepare source data
         $.getJSON(urlJSON, function (data) {
+          pageJSON = data;
           self.tracks.parseSources.call(self, data);
+        }).fail(function(jqxhr, textStatus, error) {
+          var err = textStatus + ', ' + error;
+          console.error("Request (" + urlJSON + ") failed: " + err);
+          self.btn.text("ERROR");
         });
-        if (self.tracks.sources.length > 1) {
-          self.tracks.addSources.call(self);
-        }
         return;
       }
 
@@ -205,23 +208,17 @@ mbz.archive_org_importer.release = {
       self.release.setPackaging('none');
       self.release.setNote('Imported from The Internet Archive (' + url + ')');
       // *** parsed data from release JSON object
-      $.getJSON(urlJSON, function (data) {
-        self.parseJSON.urls.call(self, data);
-        self.parseJSON.artists.call(self, data);
-        self.parseJSON.title.call(self, data);
-        self.parseJSON.labels.call(self, data);
-        self.parseJSON.release.call(self, data);
-        self.parseJSON.annotation.call(self, data);
-        self.tracks.commit.call(self);
-      }).fail(function(jqxhr, textStatus, error) {
-        var err = textStatus + ', ' + error;
-        console.error("Request (" + urlJSON + ") failed: " + err);
-      }).always(function() {
-        // submit
-        self.release.dump();
-        //self.release.submitRelease();
-        self.btn.text("Data submitted");
-      });
+      self.parseJSON.urls.call(self, pageJSON);
+      self.parseJSON.artists.call(self, pageJSON);
+      self.parseJSON.title.call(self, pageJSON);
+      self.parseJSON.labels.call(self, pageJSON);
+      self.parseJSON.release.call(self, pageJSON);
+      self.parseJSON.annotation.call(self, pageJSON);
+      self.tracks.commit.call(self);
+      // submit
+      //self.release.dump();
+      self.release.submitRelease();
+      self.btn.text("Data submitted");
     });
     $('.breadcrumbs').before(cEl.append(this.btn));
     cEl.after(self.dEl);
@@ -250,6 +247,10 @@ mbz.archive_org_importer.release = {
     * Track source to use.
     */
     selectedSource: null,
+    /**
+      * Number of unique valid sources.
+      */
+    validSources: 0,
 
     /**
       * Add all available track sources to a user dialog.
@@ -264,16 +265,19 @@ mbz.archive_org_importer.release = {
       });
 
       // add sources
-      $.each(this.tracks.sources, function(idx, val) {
-        var source = self.tracks.sources[idx];
-        var sourceTitle = '';
-        if (source.type == 'player') {
-          sourceTitle = 'Web Player';
-        } else {
-          sourceTitle = 'Playlist (' + source.name + ')';
+      $.each(this.tracks.sources, function(idx, source) {
+        //var source = self.tracks.sources[idx];
+
+        if (!source.dupe && source.files && source.files.length > 0) {
+          var sourceTitle = '';
+          if (source.type == 'player') {
+            sourceTitle = 'Web Player';
+          } else {
+            sourceTitle = 'Playlist (' + source.name + ')';
+          }
+          sourceSelect.append('<option value="' + idx + '">'
+            + sourceTitle + '</option>');
         }
-        sourceSelect.append('<option value="' + idx + '">'
-          + sourceTitle + '</option>');
       });
 
       // add elements
@@ -290,7 +294,6 @@ mbz.archive_org_importer.release = {
     commit: function() {
       var self = this;
 
-      console.log(this.tracks.data);
       $.each(this.tracks.sources[this.tracks.selectedSource].files,
           function(idx, val) {
         self.release.addTrack(self.tracks.data[val]);
@@ -309,6 +312,7 @@ mbz.archive_org_importer.release = {
       if (playerJSON) {
         this.tracks.sources.push({
           type: 'player',
+          name: 'web-player',
           data: $.parseJSON('[' + playerJSON[1] + ']')
         });
       }
@@ -345,6 +349,9 @@ mbz.archive_org_importer.release = {
         // increase parsed sources counter
         if (++sourceParsedCount == self.tracks.sources.length) {
           self.tracks.squashSources.call(self);
+          if (self.tracks.validSources > 1) {
+            self.tracks.addSources.call(self);
+          }
           // all data parsed, proceed with import
           self.enableImport();
         }
@@ -449,7 +456,6 @@ mbz.archive_org_importer.release = {
       */
     squashSources: function() {
       var self = this;
-      var toRemove = []; // array indices to remove
 
       /**
         * Compare files for two sources.
@@ -458,7 +464,7 @@ mbz.archive_org_importer.release = {
         if (a.length != b.length) {
           return false;
         }
-        console.log('compare',a,b);
+
         for (var i=0; i<a.length; i++) {
           if (a[i] != b[i]) {
             return false;
@@ -469,20 +475,30 @@ mbz.archive_org_importer.release = {
 
       // go through all source's files
       for (var i=0; i<this.tracks.sources.length; i++) {
-        if (toRemove.indexOf(i) == -1) {
-          var a = this.tracks.sources[i].files;
-          for (var j=++i; j<this.tracks.sources.length; j++) {
-            if (toRemove.indexOf(j) == -1) {
-              if (compareFiles(a, this.tracks.sources[j].files)) {
-                toRemove.push(j);
+        var src = this.tracks.sources[i];
+        if (!src.dupe) {
+          var a = src.files;
+          if (!a || a.length == 0) {
+            src.dupe = true;
+            console.warn("Remove source '" + src.name + "' no files found.");
+          } else if ((i + 1) < this.tracks.sources.length) {
+            for (var j=i + 1; j<this.tracks.sources.length; j++) {
+              var b = this.tracks.sources[j];
+              if (!b.dupe) {
+                if (compareFiles(a, b.files)) {
+                  b.dupe = true;
+                }
               }
             }
           }
         }
       }
-      // remove duplicated entries
-      $.each(toRemove, function(idx, val) {
-        self.tracks.sources.splice(val, 1);
+
+      // count valid sources
+      $.each(this.tracks.sources, function(idx, val) {
+        if (!val.dupe && val.files.length > 0) {
+          self.tracks.validSources++;
+        }
       });
     },
 
@@ -533,7 +549,7 @@ mbz.archive_org_importer.release = {
   enableImport: function() {
     this.importInitialized = true;
 
-    if (this.tracks.sources.length > 1) {
+    if (this.tracks.validSources > 1) {
       this.tracks.showSources.call(this);
       this.btn.text("Start import");
       this.btn.prop("disabled", false);
