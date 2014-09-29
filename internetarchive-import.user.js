@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.2beta
+// @version     0.4.3beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -608,7 +608,7 @@ mbz.archive_org_importer.release = {
       var url = $(location).attr('href');
       this.release.addUrl(url, '75');
       this.release.addUrl(url, '85');
-      if (data.creativecommons.license_url) {
+      if (data.creativecommons && data.creativecommons.license_url) {
         this.release.addUrl(data.creativecommons.license_url, '301');
       }
     },
