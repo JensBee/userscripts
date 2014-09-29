@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.1beta
+// @version     0.4.2beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -296,6 +296,7 @@ mbz.archive_org_importer.release = {
 
       $.each(this.tracks.sources[this.tracks.selectedSource].files,
           function(idx, val) {
+        self.tracks.data[val].idx = idx; // reset track number
         self.release.addTrack(self.tracks.data[val]);
       });
     },
