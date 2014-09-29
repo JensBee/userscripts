@@ -5,7 +5,7 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.2.0beta
+// @version     0.2.1beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -16,25 +16,23 @@ MBZ.baseUrl = 'https://musicbrainz.org/';
 MBZ.iconUrl = MBZ.baseUrl + 'favicon.ico',
 
 MBZ.Html = {
+  globStyle: null,
+
   /**
     * Add CSS entry to pages <head/>.
     * @param style definition to add
     */
-  _addGlobalStyle: function(css) {
+  _init: function() {
     if ($('head').length == 0) {
       $('body').append($('<head>'));
     }
-    var style = $('head>style');
-    if (style.length == 0) {
-      style = $('<style>');
-      style.attr('type', 'text/css');
-      $('head').append(style);
+    this.globStyle = $('head>style');
+    if (this.globStyle.length == 0) {
+      this.globStyle = $('<style>');
+      this.globStyle.attr('type', 'text/css');
+      $('head').append(this.globStyle);
     }
-    style.append(css);
-  },
-
-  _init: function() {
-    this._addGlobalStyle(
+    this.globStyle.append(
       'button.mbzButton {cursor:pointer;' +
         'text-decoration:none; text-shadow:-1px -1px 0 rgba(255,201,97,0.3); font-weight:bold; color:#000;' +
         'padding:5px 5px 5px 25px; border-radius:5px;' +
@@ -44,7 +42,13 @@ MBZ.Html = {
       'button.mbzButton:hover {' +
         'border:1px solid #454074; background-color:#FFD88C;}' +
       'button.mbzButton:disabled {cursor:default;' +
-        'border:1px solid #ccc; background-color:#ccc; color:#5a5a5a;}'
+        'border:1px solid #ccc; background-color:#ccc; color:#5a5a5a;}' +
+      'div#mbzDialog {' +
+        'margin:0.5em 0.5em 0.5em 0; padding:0.5em;' +
+        'background-color:#FFE3B0;'+
+        'border-top:1px solid #736CAE; border-left:1px solid #736CAE;' +
+        'border-bottom:1px solid #FFC961; border-right:1px solid #FFC961;' +
+      '}'
     );
   },
 
@@ -159,6 +163,14 @@ MBZ.Util = {
     return newUrls;
   },
 
+  getLastPathSegment: function(str) {
+    if (!str || typeof str !== 'string' || str.indexOf('/') == -1) {
+      return str;
+    }
+    var seg = str.split('/');
+    return seg[seg.length -1];
+  },
+
   /**
    * Convert HH:MM:SS, MM:SS, SS to seconds.
    * http://stackoverflow.com/a/9640417
@@ -178,6 +190,29 @@ MBZ.Util = {
       return s;
     } else {
       return str;
+    }
+  },
+
+  /**
+    * Convert milliseconds to HH:MM:SS.ss string.
+    * https://coderwall.com/p/wkdefg
+    */
+  msToHms: function (ms) {
+    str = MBZ.Util.asString(ms);
+    if (str.match(/^[0-9]+$/)) {
+      var milliseconds = parseInt((ms % 1000) / 100)
+          , seconds = parseInt((ms / 1000) % 60)
+          , minutes = parseInt((ms / (1000 * 60)) % 60)
+          , hours = parseInt((ms / (1000 * 60 * 60)) % 24);
+
+      hours = (hours < 10) ? "0" + hours : hours;
+      minutes = (minutes < 10) ? "0" + minutes : minutes;
+      seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+      return (hours && hours != '00' ? (hours + ":") : '') + minutes + ":"
+        + seconds + (milliseconds ? ("." + milliseconds) : '');
+    } else {
+      return ms;
     }
   },
 
