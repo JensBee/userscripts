@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.3beta
+// @version     0.4.4beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -684,31 +684,30 @@ mbz.archive_org_importer.init = function() {
     return;
   }
 
-  MBZ.Html.globStyle.append(
-    '#mbzImportTrackTable {margin-top:0.5em;margin-left:0.5em;}'
-    + '#mbzImportTrackTable thead {'
-      + 'font-weight:bold;'
-      + 'background-color:rgba(115,108,174,0.5);'
-    + '}'
-    + '#mbzImportTrackTable tbody td:nth-child(1) {'
-      + 'border-right:1px solid #666;'
-      + 'padding-right:0.15em;'
-    + '}'
-    + '#mbzImportTrackTable tbody tr:nth-child(odd) {'
-      + 'background-color:rgba(0,0,0,0.1);'
-    + '}'
-    + '#mbzImportTrackTable tbody td:nth-child(2) {'
-      + 'padding-left:0.3em;'
-    + '}'
-    + '#mbzImportTrackTable tbody td:nth-child(3) {'
-      + 'padding-left:0.3em;'
-      + 'font-family:courier,monospace;'
-      + 'text-align:right;'
-    + '}'
-  );
-
   if (pageType == 'details' && $('body').hasClass('Audio')) {
     // import a release
+    MBZ.Html.globStyle.append(
+      '#mbzImportTrackTable {margin-top:0.5em;margin-left:0.5em;}'
+      + '#mbzImportTrackTable thead {'
+        + 'font-weight:bold;'
+        + 'background-color:rgba(115,108,174,0.5);'
+      + '}'
+      + '#mbzImportTrackTable tbody td:nth-child(1) {'
+        + 'border-right:1px solid #666;'
+        + 'padding-right:0.15em;'
+      + '}'
+      + '#mbzImportTrackTable tbody tr:nth-child(odd) {'
+        + 'background-color:rgba(0,0,0,0.1);'
+      + '}'
+      + '#mbzImportTrackTable tbody td:nth-child(2) {'
+        + 'padding-left:0.3em;'
+      + '}'
+      + '#mbzImportTrackTable tbody td:nth-child(3) {'
+        + 'padding-left:0.3em;'
+        + 'font-family:courier,monospace;'
+        + 'text-align:right;'
+      + '}'
+    );
     mbz.archive_org_importer.release.init();
   } else if (pageType == 'bookmarks.php') {
     // check all bookmarks for MusicBrainz relations
