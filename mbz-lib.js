@@ -1,14 +1,13 @@
 // ==UserScript==
 // @name        MusicBrainz function library
 // @namespace   http://www.jens-bertram.net/userscripts/mbz-lib
-// @description Musicbrainz function library.
+// @description Musicbrainz function library. Requires jQuery to run.
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.2.1beta
+// @version     0.2.2beta
 //
 // @grant       none
-// @require     https://code.jquery.com/jquery-2.1.1.min.js
 // ==/UserScript==
 window.MBZ = {};
 
