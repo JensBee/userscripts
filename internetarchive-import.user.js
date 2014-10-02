@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.4beta
+// @version     0.4.5beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -34,7 +34,7 @@ mbz.archive_org_importer = {
     */
   isAudioFile: function(formatStr) {
     formatStr = formatStr.toLowerCase();
-    for (format in this.audioFormats) {
+    for (var format in this.audioFormats) {
       if (formatStr.contains(format)) {
         return true;
       }
