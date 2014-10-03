@@ -5,7 +5,7 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.2.2beta
+// @version     0.2.1beta
 //
 // @grant       none
 // ==/UserScript==
@@ -227,6 +227,176 @@ MBZ.Util = {
     return str;
   }
 };
+
+/**
+  * Artists credits bubble.
+  */
+MBZ.ACBubble = (function(){
+  var b = {
+    el: null,
+    id: '#artist-credit-bubble',
+    initialized: false,
+    observer: null,
+    onAppearCb: [],
+    onChangeCb: []
+  };
+
+  /**
+    * Callback for mutation observer.
+    */
+  function catchBubble(mutations) {
+    if (!b.initialized) {
+      var bubble = getBubble();
+      if (bubble.length == 1) {
+        b.el = bubble;
+        b.initialized = true;
+        // call onAppear callbacks
+        while (b.onAppearCb.length > 0) {
+          var cbParams = b.onAppearCb.pop();
+          cbParams.cb(b.el);
+        }
+      }
+    }
+
+    if (b.onChangeCb.length > 0) {
+      var changed = true;
+      if (mutations) {
+        changed = mutations.some(function(m) {
+          if (m.addedNodes) {
+            for (var n of m.addedNodes) {
+              if (n.nodeName.toLowerCase() == 'tr') {
+                return true;
+              }
+            };
+          }
+        });
+      }
+      if (changed) {
+        for (var cbParams of b.onChangeCb) {
+          cbParams.cb(b.el);
+        }
+      }
+    }
+  };
+
+  function getBubble() {
+    return $(b.id);
+  };
+
+  function getNameInputs() {
+    return b.el.find('input.name');
+  };
+
+  function init() {
+    var container = $('#release-editor');
+    if (container.length > 0) {
+      var bubble = getBubble();
+      if (bubble.length == 1) {
+        b.el = bubble;
+      }
+      // attach observer to bubble
+      b.observer = new MutationObserver(catchBubble);
+      b.observer.observe(container.get(0), {
+        childList: true,
+        subtree: true
+      });
+    }
+  };
+
+  /**
+    * Add an artist credit.
+    *	@data String or array with 1-3 elements. [mb-artist name, artist as
+    *	credited, join phrase]
+    */
+  this.addArtist = function(data) {
+    if (typeof data === 'string') {
+      data = [data];
+    }
+    if (data.length > 0) {
+      var inputs = getNameInputs();
+      var target = $(inputs.get(inputs.length -1));
+      var idx = inputs.length -1;
+      if (target.val() != '') {
+        $(b.el.find('.add-artist-credit').get(0)).click();
+        idx = inputs.length;
+        target = b.el.find('#ac-artist-search-' + idx);
+      }
+      target.val(data[0]);
+
+      target = b.el.find('#ac-as-credited-' + idx);
+      if (data.length > 1) {
+        target.val(data[1]);
+      } else {
+        target.val(data[0]);
+      }
+      if (data.length > 2) {
+        b.el.find('#ac-join-phrase-' + idx).val(data[2]);
+      }
+      target.focus().trigger('input').get(0).scrollIntoView();
+    }
+  };
+
+  /**
+    * Register callback function to call when bubble editor appears. Callback is
+    *	called with bubble jQuery element.
+    *	@params[cb] callback function
+    */
+  this.onAppear = function(params) {
+    if (b.el) {
+      params.cb(b.el);
+    } else {
+      b.onAppearCb.push(params);
+    }
+  };
+
+  /**
+    * Register callback function to call when bubble editor rows change. Callback
+    * is called with bubble jQuery element.
+    *	@params[cb] callback function
+    */
+  this.onChange = function(params) {
+    b.onChangeCb.push(params);
+  };
+
+  /**
+    * Get a new array with artists removed already present in bubble editor.
+    * Checks are done against the mb artist name. Check is done by using
+    * all lower case letters.
+    * @artists Array of artist names
+    */
+  this.removePresentArtists = function(artists) {
+    var inputs = getNameInputs();
+    if (inputs.length == 0) {
+      return artists;
+    }
+    var newArtists = [];
+    var presentArtists = [];
+    // gather present artists
+    $.each(inputs, function(){
+      presentArtists.push($(this).val().toLowerCase());
+    });
+    // sort out new ones
+    for (var idx in artists) {
+      if (presentArtists.indexOf(artists[idx].toLowerCase()) == -1) {
+        newArtists.push(artists[idx]);
+      }
+    }
+    return newArtists;
+  };
+
+  /**
+    * Tries to open the bubble by using the given handler.
+    * @handler Object to click, if bubble is not visible
+    */
+  this.tryOpen = function(handler) {
+    if (!b.el.is(':visible')) {
+      handler.click();
+    }
+  };
+
+  init();
+  return this;
+})();
 
 MBZ.CA = {
   baseUrl: 'https://coverartarchive.org/',
