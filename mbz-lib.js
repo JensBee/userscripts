@@ -9,19 +9,25 @@
 //
 // @grant       none
 // ==/UserScript==
-window.MBZ = {};
+// Function library to work with MusicBrainz pages.
+// Please beware that this library is not meant for public use. It may change
+// between versions in any incompatible way. If you make use of this library you
+// may want to fork it or use a service like greasyfork which is able to point
+// to a specific version of this library.
+MBZ = {};
 
 MBZ.baseUrl = 'https://musicbrainz.org/';
 MBZ.iconUrl = MBZ.baseUrl + 'favicon.ico',
 
-MBZ.Html = {
-  globStyle: null,
+MBZ.Html = function() {
+  this.globStyle = null;
+  this.mbzIcon = '<img src="' + MBZ.iconUrl + '" />';
 
   /**
     * Add CSS entry to pages <head/>.
     * @param style definition to add
     */
-  _init: function() {
+  function init() {
     if ($('head').length == 0) {
       $('body').append($('<head>'));
     }
@@ -31,25 +37,50 @@ MBZ.Html = {
       this.globStyle.attr('type', 'text/css');
       $('head').append(this.globStyle);
     }
-    this.globStyle.append(
-      'button.mbzButton {cursor:pointer;' +
-        'text-decoration:none; text-shadow:-1px -1px 0 rgba(255,201,97,0.3); font-weight:bold; color:#000;' +
-        'padding:5px 5px 5px 25px; border-radius:5px;' +
-        'border-top:1px solid #736CAE; border-left:1px solid #736CAE;' +
-        'border-bottom:1px solid #FFC961; border-right:1px solid #FFC961;' +
-        'background:#FFE3B0 url("' + MBZ.iconUrl + '") no-repeat 5px center;}' +
-      'button.mbzButton:hover {' +
-        'border:1px solid #454074; background-color:#FFD88C;}' +
-      'button.mbzButton:disabled {cursor:default;' +
-        'border:1px solid #ccc; background-color:#ccc; color:#5a5a5a;}' +
-      'div#mbzDialog {' +
-        'margin:0.5em 0.5em 0.5em 0; padding:0.5em;' +
-        'background-color:#FFE3B0;'+
-        'border-top:1px solid #736CAE; border-left:1px solid #736CAE;' +
-        'border-bottom:1px solid #FFC961; border-right:1px solid #FFC961;' +
-      '}'
+    this.globStyle.append(''
+      + 'button.mbzButton{'
+        + 'cursor:pointer;'
+        + 'text-decoration:none;'
+        + 'text-shadow:-1px -1px 0 rgba(255,201,97,0.3);'
+        + 'font-weight:bold;'
+        + 'color:#000;'
+        + 'padding:5px 5px 5px 25px;'
+        + 'border-radius:5px;'
+        + 'border-top:1px solid #736CAE;'
+        + 'border-left:1px solid #736CAE;'
+        + 'border-bottom:1px solid #FFC961;'
+        + 'border-right:1px solid #FFC961;'
+        + 'background:#FFE3B0 url("' + MBZ.iconUrl + '") no-repeat 5px center;'
+      + '}'
+      + 'button.mbzButton:hover{'
+        + 'border:1px solid #454074;'
+        + 'background-color:#FFD88C;'
+      + '}'
+      + 'button.mbzButton:disabled{'
+        + 'cursor:default;'
+        + 'border:1px solid #ccc;'
+        + 'background-color:#ccc;'
+        + 'color:#5a5a5a;'
+      + '}'
+      + 'div#mbzDialog{'
+        + 'margin:0.5em 0.5em 0.5em 0;'
+        + 'padding:0.5em;'
+        + 'background-color:#FFE3B0;'
+        + 'border-top:1px solid #736CAE;'
+        + 'border-left:1px solid #736CAE;'
+        + 'border-bottom:1px solid #FFC961;'
+        + 'border-right:1px solid #FFC961;'
+      + '}'
     );
-  },
+  };
+
+  /**
+    * Add some CSS to the global page style.
+    * @style CSS to add
+    */
+  this.addStyle = function(style) {
+    this.globStyle.append(style);
+  };
 
   /**
     * Create a MusicBrainz link.
@@ -58,9 +89,10 @@ MBZ.Html = {
     * @params[more] stuff to add after mbid + '/' (optional)
     * @return plain link text
     */
-  getLink: function (params) {
-    return MBZ.baseUrl + params.type + '/' + (params.id ? params.id + '/' : '') + (params.more || '');
-  },
+  this.getLink = function (params) {
+    return MBZ.baseUrl + params.type + '/'
+      + (params.id ? params.id + '/' : '') + (params.more || '');
+  };
 
   /**
     * Create a MusicBrainz link.
@@ -74,13 +106,15 @@ MBZ.Html = {
     * @params[icon] true/false: include MusicBrainz icon (optional, default: true)
     * @return link jQuery object
     */
-  getLinkElement: function (params) {
-    params.icon = (typeof params.icon !== 'undefined' && params.icon == false ? false : true);
+  this.getLinkElement = function (params) {
+    params.icon = (typeof params.icon !== 'undefined'
+      && params.icon == false ? false : true);
     var retEl = $('<div style="display:inline-block;">');
     if (params.before) {
       retEl.append(params.before);
     }
-    var linkEl = $('<a>' + (params.icon ? this.mbzIcon : '') + (params.text || '') + '</a>');
+    var linkEl = $('<a>' + (params.icon ? this.mbzIcon : '')
+      + (params.text || '') + '</a>');
     linkEl.attr('href', this.getLink({
       type: params.type,
       id: params.id,
@@ -94,19 +128,20 @@ MBZ.Html = {
       retEl.append(params.after);
     }
     return retEl;
-  },
+  };
 
-  getMbzButton: function(caption, title) {
-    var btn = $('<button type="button" class="mbzButton">' + caption + '</button>');
+  this.getMbzButton = function(caption, title) {
+    var btn = $('<button type="button" class="mbzButton">' + caption
+      + '</button>');
     if (title) {
       btn.attr('title', title);
     }
     return btn;
-  },
+  };
 
-  mbzIcon: '<img src="' + MBZ.iconUrl + '" />'
+  init.call(this);
 };
-MBZ.Html._init();
+MBZ.Html = new MBZ.Html();
 
 MBZ.Util = {
   /**
@@ -133,10 +168,11 @@ MBZ.Util = {
   },
 
   /**
-   * Creates http + https url from a given https? url.
-   * @url http/https url
-   * @return array with given url prefixed with http + https or single url, if not https? protocol
-   */
+    * Creates http + https url from a given https? url.
+    * @url http/https url
+    * @return array with given url prefixed with http + https or single url,
+    * if not https? protocol
+    */
   expandProtocol: function(url) {
     var urls;
     if (url.toLowerCase().startsWith('http')) {
@@ -229,175 +265,517 @@ MBZ.Util = {
 };
 
 /**
-  * Artists credits bubble.
+  * Util functions to work with results from MutationObservers.
   */
-MBZ.ACBubble = (function(){
-  var b = {
-    el: null,
-    id: '#artist-credit-bubble',
-    initialized: false,
-    observer: null,
-    onAppearCb: [],
-    onChangeCb: []
-  };
-
+MBZ.Util.Mutations = {
   /**
-    * Callback for mutation observer.
+    * Checks mutation records if an element with a given tagName was added.
+    * If callback function returns true, no further elements will be checked.
+    * @mutationRecords mutation records passed by an observer
+    * @tName tagname to check for (case is ignored)
+    * @cb callback function
+    * @scope optionl scope for callback
+    * @return if callback returned true, false otherwise
     */
-  function catchBubble(mutations) {
-    if (!b.initialized) {
-      var bubble = getBubble();
-      if (bubble.length == 1) {
-        b.el = bubble;
-        b.initialized = true;
-        // call onAppear callbacks
-        while (b.onAppearCb.length > 0) {
-          var cbParams = b.onAppearCb.pop();
-          cbParams.cb(b.el);
-        }
-      }
+  forAddedTagName: function(mutationRecords, tName, cb, scope) {
+    if (!mutationRecords || !cb || !tName || tName.trim().length == 0) {
+      return false;
     }
-
-    if (b.onChangeCb.length > 0) {
-      var changed = true;
-      if (mutations) {
-        changed = mutations.some(function(m) {
-          if (m.addedNodes) {
-            for (var n of m.addedNodes) {
-              if (n.nodeName.toLowerCase() == 'tr') {
-                return true;
-              }
-            };
+    tName = tName.toLowerCase();
+    return mutationRecords.some(function(mutationRecord){
+      for (let node of mutationRecord.addedNodes) {
+        if (node.tagName && node.tagName.toLowerCase() == tName) {
+          var ret;
+          if (scope) {
+            ret = cb.call(scope, node);
+          } else {
+            ret = cb(node);
           }
-        });
-      }
-      if (changed) {
-        for (var cbParams of b.onChangeCb) {
-          cbParams.cb(b.el);
+          if (ret == true) {
+            return ret;
+          }
         }
-      }
-    }
-  };
+      };
+    });
+  }
+};
 
-  function getBubble() {
-    return $(b.id);
-  };
-
-  function getNameInputs() {
-    return b.el.find('input.name');
-  };
-
-  function init() {
-    var container = $('#release-editor');
-    if (container.length > 0) {
-      var bubble = getBubble();
-      if (bubble.length == 1) {
-        b.el = bubble;
-      }
-      // attach observer to bubble
-      b.observer = new MutationObserver(catchBubble);
-      b.observer.observe(container.get(0), {
-        childList: true,
-        subtree: true
-      });
-    }
-  };
-
+/**
+  * Shared bubble editor functions.
+  */
+MBZ.BubbleEditor = function() {};
+MBZ.BubbleEditor.prototype = {
   /**
     * Add an artist credit.
+    * Must be called in scope.
+    * @bubble bubble element
     *	@data String or array with 1-3 elements. [mb-artist name, artist as
     *	credited, join phrase]
+    * @noAc if true, displaying the autocomplete popup will be disabled
     */
-  this.addArtist = function(data) {
+  addArtist: function(data, noAc) {
     if (typeof data === 'string') {
       data = [data];
     }
-    if (data.length > 0) {
-      var inputs = getNameInputs();
-      var target = $(inputs.get(inputs.length -1));
-      var idx = inputs.length -1;
-      if (target.val() != '') {
-        $(b.el.find('.add-artist-credit').get(0)).click();
-        idx = inputs.length;
-        target = b.el.find('#ac-artist-search-' + idx);
-      }
-      target.val(data[0]);
+    if (data && data.length > 0) {
+      var rows = this.getCreditRows();
+      if (rows.length > 0) {
+        var targets = this.getCreditInputs(rows.get(rows.length -1));
+        // check, if row is all empty..
+        if (targets[0].val() != '' || targets[1].val() != ''
+            || targets[2].val() != '') {
+          // ..if not, add one row and re-set target
+          $(this.getBubble().find('.add-item').get(0)).click();
+          rows = this.getCreditRows();
+          targets = this.getCreditInputs(rows.get(rows.length -1));
+        }
+        if (noAc) {
+          targets[0].autocomplete({disabled: true});
+        }
 
-      target = b.el.find('#ac-as-credited-' + idx);
-      if (data.length > 1) {
-        target.val(data[1]);
-      } else {
-        target.val(data[0]);
+        targets[0].val(data[0]);
+
+        if (data.length > 1) {
+          targets[1].val(data[1]);
+        } else {
+          targets[1].val(data[0]);
+        }
+        if (data.length > 2) {
+          targets[2].val(data[2]);
+        }
+        targets[0].trigger('input');
+
+        if (noAc) {
+          targets[0].autocomplete({disabled: false});
+        }
       }
-      if (data.length > 2) {
-        b.el.find('#ac-join-phrase-' + idx).val(data[2]);
-      }
-      target.focus().trigger('input').get(0).scrollIntoView();
     }
-  };
+  },
 
   /**
-    * Register callback function to call when bubble editor appears. Callback is
-    *	called with bubble jQuery element.
-    *	@params[cb] callback function
+    * Get all mb-artist credits currently listed in the bubble editor.
+    * Must be called in scope.
+    * @return array with artist names
     */
-  this.onAppear = function(params) {
-    if (b.el) {
-      params.cb(b.el);
-    } else {
-      b.onAppearCb.push(params);
+  getArtistCredits: function() {
+    var rows = this.getCreditRows();
+    var artists = [];
+
+    if (rows.length > 0) {
+      var self = this;
+
+      $.each(rows, function() {
+        var row = $(this);
+        var inputs = self.getCreditInputs(row);
+        if (inputs[0]) {
+          artists.push(inputs[0].val());
+        }
+      });
     }
-  };
+
+    return artists;
+  },
 
   /**
-    * Register callback function to call when bubble editor rows change. Callback
-    * is called with bubble jQuery element.
-    *	@params[cb] callback function
+    * See Observer.addAppearCb.
     */
-  this.onChange = function(params) {
-    b.onChangeCb.push(params);
-  };
+  onAppear: function(params) {
+    return this._bubble.observer.addAppearCb(params);
+  },
+
+  /**
+    * See Observer.addChangedCb.
+    */
+  onContentChange: function(params) {
+    return this._bubble.observer.addChangedCb(params);
+  },
+
+  /**
+    * Remove a complete artist credit by it's row.
+    * @row artists data row
+    */
+  removeArtist: function(row) {
+    if (row) {
+      // may be <button/> or <input/> - so check attribute only
+      $(row).find('.remove-artist-credit').click();
+    }
+  },
 
   /**
     * Get a new array with artists removed already present in bubble editor.
     * Checks are done against the mb artist name. Check is done by using
     * all lower case letters.
+    * Must be called in scope.
     * @artists Array of artist names
     */
-  this.removePresentArtists = function(artists) {
-    var inputs = getNameInputs();
-    if (inputs.length == 0) {
-      return artists;
-    }
+  removePresentArtists: function(artists) {
+    var rows = this.getCreditRows();
     var newArtists = [];
-    var presentArtists = [];
-    // gather present artists
-    $.each(inputs, function(){
-      presentArtists.push($(this).val().toLowerCase());
-    });
-    // sort out new ones
-    for (var idx in artists) {
-      if (presentArtists.indexOf(artists[idx].toLowerCase()) == -1) {
-        newArtists.push(artists[idx]);
+
+    var presentArtists = this.getArtistCredits();
+
+    if (rows.length > 0) {
+      var presentArtists = [];
+      var self = this;
+
+      $.each(rows, function() {
+        var row = $(this);
+        var inputs = self.getCreditInputs(row);
+        if (inputs[0]) {
+          presentArtists.push(inputs[0].val().toLowerCase());
+        }
+      });
+
+      // sort out new ones
+      for (let artist of artists) {
+        if (presentArtists.indexOf(artist.toLowerCase()) == -1) {
+          newArtists.push(artist);
+        }
       }
     }
+
     return newArtists;
+  },
+
+  /**
+    * Tries to open the bubble by clicking the given handler.
+    * @bubble bubble element
+    * @handler handler to click
+    */
+  tryOpen: function(handler) {
+    var bubble = this.getBubble();
+    if (bubble && !bubble.is(':visible')) {
+      handler.click();
+    }
+  },
+
+  /**
+    * Bubble observer class.
+    * @instance Bubble class instance.
+    * @ids[bubble] Id of bubble element
+    * @ids[container] For two-stage loading: container that will contain the
+    * bubble (optional)
+    */
+  Observer: function(instance) {
+    var observer = null;
+    var disconnected = false;
+    var onAppearCb = [];
+    var onChangeCb = [];
+    var that = instance;
+    var stagedLoading = false;
+    var noBubble = false;
+
+    function mutated(mutationRecords) {
+      if (that._bubble.el) {
+        // remove observer, if noone is listening
+        if (onChangeCb.length == 0) {
+          console.debug("Remove bubble observer - noone listening.");
+          observer.disconnect();
+          disconnected = true;
+        } else {
+          for (let cbParams of onChangeCb) {
+            cbParams.cb(that._bubble.el, mutationRecords);
+          }
+        }
+      } else {
+        var bubble = $(that._bubble.id);
+        if (bubble && bubble.length ==1) {
+          that._bubble.el = bubble;
+          if (stagedLoading) {
+            // switch to real bubble element from container
+            console.debug("StagedLoading: switching observer to bubble", bubble);
+            observer.disconnect();
+            observer.observe(bubble.get(0), {
+              childList: true,
+              subtree: true
+            });
+          }
+          hasAppeared();
+        }
+      }
+    };
+
+    function hasAppeared() {
+      // call onAppear callbacks
+      while (onAppearCb.length > 0) {
+        onAppearCb.pop().cb(that._bubble.el);
+      }
+    };
+
+    function init() {
+      var bubble = $(that._bubble.id);
+      var e;
+      if (bubble && bubble.length ==1) {
+        that._bubble.el = bubble;
+        e = bubble.get(0);
+        hasAppeared();
+      } else if (that._bubble.containerId) {
+        stagedLoading = true;
+        e = $(that._bubble.containerId).get(0);
+      } else {
+        console.debug("Bubble not found and no container specified. Giving up.");
+        noBubble = true;
+        return;
+      }
+      observer = new MutationObserver(mutated);
+      observer.observe(e, {
+        childList: true,
+        subtree: true
+      });
+    };
+
+    function reAttach() {
+      if (disconnected) {
+        console.debug("Re-attach bubble observer - new listener.");
+        observer.observe(that._bubble.el.get(0), {
+          childList: true,
+          subtree: true
+        });
+      }
+    };
+
+    /**
+      * Add a listener to listen to appearance of the bubble. Callback is called
+      * directly, if bubble is already present.
+      * @cb[cb] callcack function
+      * @return true, if added or called immediately, false, if there's no
+      * bubble to attach to
+      */
+    this.addAppearCb = function(cb) {
+      if (noBubble) {
+        console.debug("Not attaching to event. No bubble.");
+        return false;
+      }
+      if (that._bubble.el) {
+        // direct call, bubble already there
+        cb.cb(that._bubble.el);
+      } else {
+        // add to stack
+        onAppearCb.push(cb);
+      }
+      return true;
+    };
+
+    /**
+      * Add a listener to listen to changes to the bubble.
+      * @cb[cb] callcack function
+      * @return true, if added, false, if there's no bubble to attach to
+      */
+    this.addChangedCb = function(cb) {
+      if (noBubble) {
+        console.debug("Not attaching to event. No bubble.");
+        return false;
+      }
+      reAttach();
+      onChangeCb.push(cb);
+      return false;
+    };
+
+    init.call(this);
+  }
+};
+
+/**
+  * Differenciate types of bubble editors.
+  */
+MBZ.BubbleEditor.types = {
+  artistCredits: 'ArtistCreditBubble',
+  trackArtistCredits: 'TrackArtistCreditBubble'
+};
+
+/**
+  * Artists credits bubble.
+  */
+MBZ.BubbleEditor.ArtistCredits = function() {
+  this.type = MBZ.BubbleEditor.types.artistCredits;
+  this._bubble = {
+    el: null,
+    id: '#artist-credit-bubble',
+    containerId: '#release-editor',
+    observer: null
   };
 
   /**
-    * Tries to open the bubble by using the given handler.
-    * @handler Object to click, if bubble is not visible
+    * Get the bubble element.
     */
-  this.tryOpen = function(handler) {
-    if (!b.el.is(':visible')) {
-      handler.click();
+  this.getBubble = function() {
+    return this._bubble.el;
+  };
+
+  /**
+    * Extract the inputs for mb-artist, credited-artist and join-phrase from a
+    *	single data row.
+    *	@row data row
+    * @return array with input elements for mb-artist, credited-artist and
+    * join-phrase from a single data row.
+    */
+  this.getCreditInputs = function(row) {
+    if (!row || (row.length && row.length == 0)) {
+      console.debug("Empty row.");
+      return [];
+    }
+    row = $(row);
+
+    var rowData = [];
+    var el = row.find('input[type="text"]'); // mb-artist
+
+    if (el.length == 1) {
+      rowData.push(el);
+      el = row.next().find('input[type="text"]'); // artist as credited
+      if (el.length == 1) {
+        rowData.push(el);
+        el = row.next().next().find('input[type="text"]'); // join phrase
+        if (el.length == 1) {
+          rowData.push(el);
+          return rowData;
+        }
+      }
+    }
+    return [];
+  };
+
+  /**
+    * Get the rows containing inputs for mb-artist, credited-artist and
+    * join-phrase from the bubble.
+    *	@return jQuery object containing each data row. This is for each entry the
+    *	first row containing the mb-artist name.
+    */
+  this.getCreditRows = function() {
+    if (this._bubble.el) {
+      return this._bubble.el.find('tr:has(input.name)');
+    } else {
+      console.debug("No rows found. Bubble not present.");
+      return $();
     }
   };
 
-  init();
-  return this;
-})();
+  this._bubble.observer = new this.Observer(this);
+};
+MBZ.BubbleEditor.ArtistCredits.prototype = new MBZ.BubbleEditor();
+MBZ.BubbleEditor.ArtistCredits = new MBZ.BubbleEditor.ArtistCredits();
 
+/**
+  * Track artists credits bubble.
+  */
+MBZ.BubbleEditor.TrackArtistCredits = function() {
+  this.type = MBZ.BubbleEditor.types.trackArtistCredits;
+  this._bubble = {
+    el: null,
+    id: '#track-ac-bubble',
+    observer: null
+  };
+
+  /**
+    * Get the bubble element.
+    */
+  this.getBubble = function() {
+    return this._bubble.el;
+  };
+
+  /**
+    * Get the rows containing inputs for mb-artist, credited-artist and
+    * join-phrase from the bubble.
+    *	@return jQuery object containing each data row
+    */
+  this.getCreditRows = function() {
+    if (this._bubble.el) {
+      return this._bubble.el.find('tr:has(td span.artist)');
+    } else {
+      console.debg("No rows found. Bubble not present.");
+      return $();
+    }
+  };
+
+  /**
+    * Extract the inputs for mb-artist, credited-artist and join-phrase from a
+    *	single data row.
+    *	@row data row
+    * @return array with input elements for mb-artist, credited-artist and
+    * join-phrase from a single data row.
+    */
+  this.getCreditInputs = function(row) {
+    if (!row) {
+      console.debug("Empty row.");
+      return [];
+    }
+
+    var inputs = $(row).find('td input[type="text"]');
+    if (inputs.length == 3) {
+      return [
+        $(inputs.get(0)), // mb-artist
+        $(inputs.get(1)), // artist as credited
+        $(inputs.get(2)) // join-phrase
+      ];
+    } else {
+      return [];
+    }
+  };
+
+  this._bubble.observer = new this.Observer(this);
+};
+MBZ.BubbleEditor.TrackArtistCredits.prototype = new MBZ.BubbleEditor();
+MBZ.BubbleEditor.TrackArtistCredits = new MBZ.BubbleEditor.TrackArtistCredits();
+
+/**
+  * Release tracklist.
+  */
+MBZ.TrackList = function() {
+  var observer;
+  var id = '#tracklist';
+
+  var Observer = function() {
+    var observer;
+    var onChangeCb = [];
+
+    function attach() {
+      console.debug("Creating tracklist observer - new listener.");
+      observer = new MutationObserver(mutated);
+      observer.observe($(id).get(0), {
+        childList: true,
+        subtree: true
+      });
+    };
+
+    function mutated(mutationRecords) {
+      var element = $(id);
+      for (cb of onChangeCb) {
+        cb.cb(element, mutationRecords);
+      }
+    };
+
+    /**
+      * Add a listener to listen to changes to the bubble.
+      * @cb[cb] callcack function
+      */
+    this.addChangedCb = function(cb) {
+      if (!observer) {
+        attach();
+      }
+      onChangeCb.push(cb);
+    };
+  };
+
+  this.getList = function() {
+    return $(id);
+  };
+
+  this.onContentChange = function(params) {
+    if (!observer) {
+      console.debug("Not attaching to event. No tracklist.");
+      return false;
+    }
+    return observer.addChangedCb(params);
+  };
+
+  if ($(id).length == 1) {
+    observer = new Observer();
+  }
+};
+MBZ.TrackList = new MBZ.TrackList();
+
+/**
+  * Cover art archive.
+  */
 MBZ.CA = {
   baseUrl: 'https://coverartarchive.org/',
   // no https here (bad_cert notice)
@@ -410,7 +788,8 @@ MBZ.CA = {
     * @params[more] stuff to add after mbid (optional)
     */
   getLink: function (params) {
-    return this.originBaseUrl + params.type + '/' + (params.id ? params.id + '/' : '') + (params.more || '');
+    return this.originBaseUrl + params.type + '/'
+      + (params.id ? params.id + '/' : '') + (params.more || '');
   },
 };
 
@@ -484,7 +863,8 @@ MBZ.WS = {
   getUrlRelation: function (params) {
     this._qAdd({
       cb: params.cb,
-      url: this._baseUrl + 'url?resource=' + encodeURIComponent(params.res) + '&inc=' + params.rel + '-rels',
+      url: this._baseUrl + 'url?resource=' + encodeURIComponent(params.res)
+        + '&inc=' + params.rel + '-rels',
       scope: params.scope
     });
   },
@@ -537,8 +917,9 @@ MBZ.WS = {
  * Release related functions.
  */
 MBZ.Release = function() {
-  var form = $('<form method="post" id="' + MBZ.Release._form.baseName + '-' + (MBZ.Release._form.count++) +
-    '" target="_blank" action="' + MBZ.Release._form.target + '" acceptCharset="UTF-8"></form>');
+  var form = $('<form method="post" id="' + MBZ.Release._form.baseName + '-'
+    + (MBZ.Release._form.count++) + '" target="_blank" action="'
+    + MBZ.Release._form.target + '" acceptCharset="UTF-8"></form>');
 
   this.data = {
     annotation: '', // content
@@ -732,7 +1113,8 @@ MBZ.Release.getUrlRelations = function(params) {
 /**
   * Insert a link, if a release has MusicBrainz relations.
   * @data key=mbid value=string array: relation types
-  * @target target jQuery element to append (optional) or this.mbLinkTarget set in scope
+  * @target target jQuery element to append (optional) or
+  * this.mbLinkTarget set in scope
   */
 MBZ.Release.insertMBLink = function(data, target) {
   if (data) {
@@ -778,7 +1160,8 @@ MBZ.Release.insertMBLink = function(data, target) {
             before: ', ',
             icon: false
           });
-          relLink.after('<sup> ' + v.length + editLink.html() + artLink.html() + '</sup>');
+          relLink.after('<sup> ' + v.length + editLink.html()
+            + artLink.html() + '</sup>');
         });
       }
     });
