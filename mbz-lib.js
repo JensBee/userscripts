@@ -5,7 +5,7 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.2.1beta
+// @version     0.2.2beta
 //
 // @grant       none
 // ==/UserScript==
