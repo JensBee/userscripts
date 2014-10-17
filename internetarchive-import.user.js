@@ -5,7 +5,7 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.5beta
+// @version     0.4.6beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
@@ -155,34 +155,43 @@ mbz.archive_org_importer.linkCheck = {
 /**
   * Functions to import a single release.
   */
-mbz.archive_org_importer.release = {
-  btn: MBZ.Html.getMbzButton('Import', 'Import this release to MusicBrainz'),
-  dEl: $('<div id="mbzDialog">').hide(), // dialog elements
-  mbLinkTarget: null,
-  importRunning: false,
-  importInitialized: false,
+mbz.archive_org_importer.Release = function() {
+  this.btn = MBZ.Html.getMbzButton('Import',
+    'Import this release to MusicBrainz');
+  this.dEl = $('<div id="mbzDialog">').hide(); // dialog elements
+  this.mbLinkTarget = null;
+  this.importRunning = false;
+  this.importInitialized = false;
+  // release data object finally passed on to MusicBrainz.
+  this.release = new MBZ.Release();
+  this.tracks = new mbz.archive_org_importer.Release.Tracks();
+  var self = this;
+  var submitted = false;
 
   /**
     * Initialize release parsing.
     */
-  init: function() {
-    this.tracks.detectSources.call(this);
+  function init() {
+    this.tracks.detectSources();
 
-    var playerJSON = $('#midcol > script').text().trim()
-      .match(/Play\([\s\S]*?\[([\s\S]*)\]/);
-    if (!playerJSON) {
+    var playerJSON = this.tracks.getPlayerJSON();
+    if (playerJSON.length == 0) {
       console.error('Player JSON data not found. Disabling MusicBrainz import.');
       return;
     }
 
-    var self = this;
     var cEl = $('<div id="mbzControls">'); // control elements
     var url = MBZ.Util.rmTrSlash($(location).attr('href'));
     var urlJSON = url + '&output=json';
-    var trackData = $.parseJSON('[' + playerJSON[1] + ']');
+    var trackData = $.parseJSON(playerJSON);
     var pageJSON = null; // page data as JSON object
 
     this.btn.click(function () {
+      if (submitted) {
+        self.release.submitRelease();
+        return;
+      }
+
       if (!self.importInitialized) {
         self.btn.prop("disabled", true);
         self.btn.text("Initializing import");
@@ -208,17 +217,21 @@ mbz.archive_org_importer.release = {
       self.release.setPackaging('none');
       self.release.setNote('Imported from The Internet Archive (' + url + ')');
       // *** parsed data from release JSON object
-      self.parseJSON.urls.call(self, pageJSON);
-      self.parseJSON.artists.call(self, pageJSON);
-      self.parseJSON.title.call(self, pageJSON);
-      self.parseJSON.labels.call(self, pageJSON);
-      self.parseJSON.release.call(self, pageJSON);
-      self.parseJSON.annotation.call(self, pageJSON);
-      self.tracks.commit.call(self);
+      self.parseJSON.urls(self.release, pageJSON);
+      self.parseJSON.artists(self.release, pageJSON);
+      self.parseJSON.title(self.release, pageJSON);
+      self.parseJSON.labels(self.release, pageJSON);
+      self.parseJSON.release(self.release, pageJSON);
+      self.parseJSON.annotation(self.release, pageJSON);
+      self.tracks.commit(self.release);
       // submit
       //self.release.dump();
-      self.release.submitRelease();
-      self.btn.text("Data submitted");
+      self.btn.text("Submitting..");
+      self.release.submitRelease(function() {
+        submitted = true;
+        self.btn.prop("disabled", false);
+        self.btn.text("Submit again");
+      });
     });
     $('.breadcrumbs').before(cEl.append(this.btn));
     cEl.after(self.dEl);
@@ -228,322 +241,11 @@ mbz.archive_org_importer.release = {
       cb: MBZ.Release.insertMBLink,
       scope: self
     });
-  },
+  };
 
-  tracks: {
-    /**
-    * Target element to display track source contents.
-    */
-    contentHtml: $('<div>'),
-    /**
-    * Store parsed track data objects to allow multiple data editing passes.
-    */
-    data: {},
-    /**
-    * Track data sources available.
-    */
-    sources: [],
-    /**
-    * Track source to use.
-    */
-    selectedSource: null,
-    /**
-      * Number of unique valid sources.
-      */
-    validSources: 0,
-
-    /**
-      * Add all available track sources to a user dialog.
-      */
-    addSources: function(show) {
-      var self = this;
-      var sourceSelect = $('<select>');
-
-      sourceSelect.on('change', function(){
-        self.tracks.selectedSource = this.value;
-        self.tracks.showSources.call(self);
-      });
-
-      // add sources
-      $.each(this.tracks.sources, function(idx, source) {
-        //var source = self.tracks.sources[idx];
-
-        if (!source.dupe && source.files && source.files.length > 0) {
-          var sourceTitle = '';
-          if (source.type == 'player') {
-            sourceTitle = 'Web Player';
-          } else {
-            sourceTitle = 'Playlist (' + source.name + ')';
-          }
-          sourceSelect.append('<option value="' + idx + '">'
-            + sourceTitle + '</option>');
-        }
-      });
-
-      // add elements
-      this.dEl.append(sourceSelect);
-      sourceSelect.before('Found multiple track listings with different items.'
-        + '<br/>Please select a track data source to import: ');
-      this.dEl.append(this.tracks.contentHtml);
-    },
-
-    /**
-      * Commit currently selected tracks source to be included in MusicBrainz
-      * submission.
-      */
-    commit: function() {
-      var self = this;
-
-      $.each(this.tracks.sources[this.tracks.selectedSource].files,
-          function(idx, val) {
-        self.tracks.data[val].idx = idx; // reset track number
-        self.release.addTrack(self.tracks.data[val]);
-      });
-    },
-
-    /**
-      * Check which track sources are available. Called on page loading.
-      */
-    detectSources: function() {
-      var self = this;
-
-      // internal player data
-      var playerJSON = $('#midcol > script').text().trim()
-        .match(/Play\([\s\S]*?\[([\s\S]*)\]/);
-      if (playerJSON) {
-        this.tracks.sources.push({
-          type: 'player',
-          name: 'web-player',
-          data: $.parseJSON('[' + playerJSON[1] + ']')
-        });
-      }
-
-      // playlists
-      $('#ff0 a').each(function(idx, item){
-        var url = $(item).attr('href');
-        if (url.endsWith('.m3u')) {
-          self.tracks.sources.push({
-            type: 'playlist',
-            //name: listName,
-            name: MBZ.Util.getLastPathSegment(decodeURIComponent(url)),
-            url: url //window.location.origin + url
-          });
-        }
-      });
-
-      if (this.tracks.sources.length > 0) {
-        // default to first entry
-        this.tracks.selectedSource = 0;
-      }
-    },
-
-    /**
-      * Parse track data from all available sources. Called, when import is
-      * initialized.
-      * @pageData page data as JSON object
-      */
-    parseSources: function(pageData) {
-      var self = this;
-      var sourceParsedCount = 0;
-
-      function incParsedCount() {
-        // increase parsed sources counter
-        if (++sourceParsedCount == self.tracks.sources.length) {
-          self.tracks.squashSources.call(self);
-          if (self.tracks.validSources > 1) {
-            self.tracks.addSources.call(self);
-          }
-          // all data parsed, proceed with import
-          self.enableImport();
-        }
-      }
-
-      function getTrackList(source) {
-        if (source.files && source.files.length > 0) {
-          // looks like data is already set
-          return;
-        }
-        source.files = [];
-        if (source.type == 'player') {
-          $.each(source.data, function(idx, val) {
-            var file = val.sources[0].file;
-            if (file) {
-              source.files.push(MBZ.Util.getLastPathSegment(file));
-            }
-          });
-          // done
-          incParsedCount();
-        } else if (source.type == 'playlist') {
-          // needed, since we get redirected to differet subdomain
-          var url = 'https://cors-anywhere.herokuapp.com/archive.org:443'
-            + source.url;
-          $.get(url, function(data) {
-            //source.data = data;
-            var files = data.split('\n');
-            $.each(files, function(idx, file) {
-              file = MBZ.Util.getLastPathSegment(file.trim());
-              if (file.length > 0) {
-                source.files.push(file);
-              }
-            });
-          }, 'text').fail(function(jqxhr, textStatus, error) {
-            var err = textStatus + ', ' + error;
-            console.error("Request (" + url + ") failed: " + err);
-          }).always(function() {
-            // done
-            incParsedCount();
-          });
-        }
-      }
-
-      // First try to parse data from the internal player as a basis. This data
-      // may be incomplete (cropped track names) so add it first and overwrite it
-      // later with more complete data from the page's JSON.
-      $.each(this.tracks.sources, function(idx, val) {
-        var source = self.tracks.sources[idx];
-        if (source.type == 'player') {
-          // parse some track data from the player
-          self.parseJSON.tracksFromPlayer.call(self, source.data);
-        }
-      });
-
-      // try to get missing data from page's JSON object
-      if (pageData.files) {
-        self.parseJSON.tracksFromPage.call(self, pageData);
-      }
-
-      // since track data is available, pase the track list for each source
-      $.each(this.tracks.sources, function(idx, val) {
-        getTrackList(val);
-      });
-    },
-
-    /**
-      * Initialize and show the source's track data dialog. Also called, to update
-      * on track source data select change.
-      */
-    showSources: function() {
-      var self = this;
-      var trackTable = $('<table id="mbzImportTrackTable">'
-        + '<thead>'
-        + '<tr>'
-        + '<td>#</td><td>Title</td><td>Length</td>'
-        + '</tr></thead></table>');
-      var trackList = $('<tbody>');
-
-      $.each(this.tracks.sources[this.tracks.selectedSource].files,
-          function(idx, val) {
-        if (self.tracks.data[val]) {
-          var duration = self.tracks.data[val].dur;
-          duration = (duration ? MBZ.Util.msToHms(duration) : '&mdash;');
-          trackList.append($('<tr>'
-            + '<td>' + (idx + 1) + '</td>'
-            + '<td>' + self.tracks.data[val].tit + '</td>'
-            + '<td>' + duration + '</td>'
-            + '</tr>'));
-        } else {
-          console.warn('No data for file "' + val + '" found.');
-        }
-      });
-
-      trackTable.append(trackList);
-      this.tracks.contentHtml.html(trackTable);
-
-      this.dEl.show();
-    },
-
-    /**
-      * Remove duplicated sources which have the same track lists.
-      */
-    squashSources: function() {
-      var self = this;
-
-      /**
-        * Compare files for two sources.
-        */
-      function compareFiles(a, b) {
-        if (a.length != b.length) {
-          return false;
-        }
-
-        for (var i=0; i<a.length; i++) {
-          if (a[i] != b[i]) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      // go through all source's files
-      for (var i=0; i<this.tracks.sources.length; i++) {
-        var src = this.tracks.sources[i];
-        if (!src.dupe) {
-          var a = src.files;
-          if (!a || a.length == 0) {
-            src.dupe = true;
-            console.warn("Remove source '" + src.name + "' no files found.");
-          } else if ((i + 1) < this.tracks.sources.length) {
-            for (var j=i + 1; j<this.tracks.sources.length; j++) {
-              var b = this.tracks.sources[j];
-              if (!b.dupe) {
-                if (compareFiles(a, b.files)) {
-                  b.dupe = true;
-                }
-              }
-            }
-          }
-        }
-      }
-
-      // count valid sources
-      $.each(this.tracks.sources, function(idx, val) {
-        if (!val.dupe && val.files.length > 0) {
-          self.tracks.validSources++;
-        }
-      });
-    },
-
-    /**
-      * Update track metadata with new values. If a value is already set, it will
-      * get overwritten with the new one.
-      */
-    updateData: function(data) {
-      function isValid(dataEntry) {
-        if (typeof dataEntry !== 'undefined' && dataEntry != null) {
-          if (typeof dataEntry === 'string') {
-            if (dataEntry.trim().length > 0) {
-              return true;
-            }
-            return false;
-          } else {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      if (this.tracks.data[data.file]) {
-        var tData = this.tracks.data[data.file];
-        // update
-        if (isValid(data.med)) {
-          tData.med = data.med;
-        }
-        if (isValid(data.tit)) {
-          tData.tit = data.tit.trim();
-        }
-        if (isValid(data.idx)) {
-          tData.idx = data.idx;
-        }
-        if (isValid(data.dur)) {
-          tData.dur = data.dur;
-        }
-      } else {
-        // add new
-        this.tracks.data[data.file] = data;
-      }
-    },
-  },
-
+  init.call(this);
+};
+mbz.archive_org_importer.Release.prototype = {
   /**
     * Callback function. Called when all sources are parsed.
     */
@@ -557,123 +259,435 @@ mbz.archive_org_importer.release = {
     } else {
       this.btn.click();
     }
+  }
+};
+/**
+  * Parse JSON response for a release.
+  */
+mbz.archive_org_importer.Release.prototype.parseJSON = {
+  annotation: function (release, data) {
+    if (data.metadata.notes) {
+      release.setAnnotation(data.metadata.notes[0]);
+    }
   },
-
-  /**
-    * Parse JSON response for a release.
-    */
-  parseJSON: {
-    annotation: function (data) {
-      if (data.metadata.notes) {
-        this.release.setAnnotation(data.metadata.notes[0]);
-      }
-    },
-    artists: function (data) {
-      if (data.metadata.creator) {
-        var self = this;
-        $.each(data.metadata.creator, function (idx, val) {
-          self.release.addArtist(val);
+  artists: function (release, data) {
+    if (data.metadata.creator) {
+      $.each(data.metadata.creator, function (idx, val) {
+        release.addArtist(val);
+      });
+    }
+  },
+  labels: function (release, data) {
+    if (data.metadata.collection) {
+      $.each(data.metadata.collection, function (idx, val) {
+        release.addLabel({
+          name: val,
+          catNo: data.metadata.identifier[0]
         });
-      }
-    },
-    labels: function (data) {
-      if (data.metadata.collection) {
-        var self = this;
-        $.each(data.metadata.collection, function (idx, val) {
-          self.release.addLabel({
-            name: val,
-            catNo: data.metadata.identifier[0]
+      });
+    }
+  },
+  release: function (releaseObj, data) {
+    var dates = data.metadata.date || data.metadata.publicdate;
+    if (dates) {
+      $.each(dates, function (idx, val) {
+        var date = val.match(/([0-9]{4})-([0-9]{2})-([0-9]{2}).*/);
+        if (date && date.length == 4) {
+          releaseObj.addRelease({
+            y: date[1],
+            m: date[2],
+            d: date[3],
+            cc:'XW'
           });
-        });
-      }
-    },
-    release: function (data) {
-      var dates = data.metadata.date || data.metadata.publicdate;
-      if (dates) {
-        var self = this;
-        $.each(dates, function (idx, val) {
-          var date = val.match(/([0-9]{4})-([0-9]{2})-([0-9]{2}).*/);
-          if (date && date.length == 4) {
-            self.release.addRelease({
-              y: date[1],
-              m: date[2],
-              d: date[3],
-              cc:'XW'
-            });
-          }
-        });
-      }
-    },
-    urls: function (data) {
-      var url = $(location).attr('href');
-      this.release.addUrl(url, '75');
-      this.release.addUrl(url, '85');
-      if (data.creativecommons && data.creativecommons.license_url) {
-        this.release.addUrl(data.creativecommons.license_url, '301');
-      }
-    },
-    title: function (data) {
-      if (data.metadata.title) {
-        this.release.setTitle(data.metadata.title[0]);
-      }
-    },
-    /**
-      * First parse track list from player JSON data. The provided information
-      * may not be complete, so gather the parsed data in a local array.
-      */
-    tracksFromPlayer: function(data) {
-      if (data.length > 0) {
-        var self = this;
-        $.each(data, function(idx, val) {
+        }
+      });
+    }
+  },
+  urls: function (release, data) {
+    var url = $(location).attr('href');
+    release.addUrl(url, '75');
+    release.addUrl(url, '85');
+    if (data.creativecommons && data.creativecommons.license_url) {
+      release.addUrl(data.creativecommons.license_url, '301');
+    }
+  },
+  title: function (release, data) {
+    if (data.metadata.title) {
+      release.setTitle(data.metadata.title[0]);
+    }
+  },
+  /**
+    * First parse track list from player JSON data. The provided information
+    * may not be complete, so gather the parsed data in a local array.
+    */
+  tracksFromPlayer: function(data) {
+    if (data.length > 0) {
+      var self = this;
+      $.each(data, function(idx, val) {
+        var duration = MBZ.Util.hmsToSeconds(val.duration);
+        duration = Math.round(parseFloat(duration) * 1000); // sec to msec
+        if (isNaN(duration)) {
+          duration = null;
+        }
+        // get source file name
+        var file = val.sources[0].file;
+        if (file) {
+          self.tracks.updateData({
+            med: 0,
+            tit: val.title.replace(/^[0-9]+\.\s/,''),
+            idx: idx,
+            dur: duration,
+            file: MBZ.Util.getLastPathSegment(file)
+          });
+        } else {
+          console.log("Could not parse file name from player JSON.");
+        }
+      });
+    }
+  },
+  tracksFromPage: function(data) {
+    if (data && data.files) {
+      var self = this;
+      $.each(data.files, function(file, val){
+        if (mbz.archive_org_importer.isAudioFile(val.format)) {
+          var fileName = file.replace(/^\//, ''); // remove leading slash
           var duration = MBZ.Util.hmsToSeconds(val.duration);
           duration = Math.round(parseFloat(duration) * 1000); // sec to msec
           if (isNaN(duration)) {
             duration = null;
           }
-          // get source file name
-          var file = val.sources[0].file;
-          if (file) {
-            self.tracks.updateData.call(self, {
-              med: 0,
-              tit: val.title.replace(/^[0-9]+\.\s/,''),
-              idx: idx,
-              dur: duration,
-              file: MBZ.Util.getLastPathSegment(file)
-            });
-          } else {
-            console.log("Could not parse file name from player JSON.");
-          }
+
+          self.tracks.updateData({
+            med: 0,
+            tit: val.title,
+            dur: duration,
+            file: fileName
+          });
+        }
+      });
+    }
+  }
+};
+/**
+  * Handle track sources and the displaying of those data.
+  */
+mbz.archive_org_importer.Release.Tracks = function() {
+  /**
+    * Target element to display track source contents.
+    */
+  var contentHtml = $('<div>');
+  /**
+    * Store parsed track data objects to allow multiple data editing passes.
+    */
+  var tracks = {};
+  /**
+    * Track data sources available.
+    */
+  var sources = [];
+  /**
+    * Track source to use.
+    */
+  var selectedSource = null;
+  /**
+    * Number of unique valid sources.
+    */
+  var validSources = 0;
+
+  /**
+    * Add all available track sources to a user dialog.
+    */
+  function addSources(show) {
+    var sourceSelect = $('<select>');
+
+    sourceSelect.on('change', function(){
+      selectedSource = this.value;
+      showSources();
+    });
+
+    // add sources
+    $.each(sources, function(idx, source) {
+      if (!source.dupe && source.files && source.files.length > 0) {
+        var sourceTitle = '';
+        if (source.type == 'player') {
+          sourceTitle = 'Web Player';
+        } else {
+          sourceTitle = 'Playlist (' + source.name + ')';
+        }
+        sourceSelect.append('<option value="' + idx + '">'
+          + sourceTitle + '</option>');
+      }
+    });
+
+    // add elements
+    this.dEl.append(sourceSelect);
+    sourceSelect.before('Found multiple track listings with different items.'
+      + '<br/>Please select a track data source to import: ');
+    this.dEl.append(contentHtml);
+  };
+
+  /**
+    * Commit currently selected tracks source to be included in MusicBrainz
+    * submission.
+    */
+  this.commit = function(release) {
+    $.each(sources[selectedSource].files, function(idx, val) {
+      tracks[val].idx = idx; // reset track number
+      release.addTrack(tracks[val]);
+    });
+  };
+
+  /**
+    * Check which track sources are available. Called on page loading.
+    */
+  this.detectSources = function() {
+    // internal player data
+    var playerJSON = this.getPlayerJSON();
+    if (playerJSON.length > 0) {
+      sources.push({
+        type: 'player',
+        name: 'web-player',
+        data: $.parseJSON(playerJSON)
+      });
+    }
+
+    // playlists
+    $('#ff0 a').each(function(idx, item){
+      var url = $(item).attr('href');
+      if (url.endsWith('.m3u')) {
+        sources.push({
+          type: 'playlist',
+          name: MBZ.Util.getLastPathSegment(decodeURIComponent(url)),
+          url: url
         });
       }
-    },
-    tracksFromPage: function(data) {
-      if (data && data.files) {
-        var self = this;
-        $.each(data.files, function(file, val){
-          if (mbz.archive_org_importer.isAudioFile(val.format)) {
-            var fileName = file.replace(/^\//, ''); // remove leading slash
-            var duration = MBZ.Util.hmsToSeconds(val.duration);
-            duration = Math.round(parseFloat(duration) * 1000); // sec to msec
-            if (isNaN(duration)) {
-              duration = null;
-            }
+    });
 
-            self.tracks.updateData.call(self, {
-              med: 0,
-              tit: val.title,
-              dur: duration,
-              file: fileName
-            });
+    if (sources.length > 0) {
+      // default to first entry
+      selectedSource = 0;
+    }
+  };
+
+  /**
+    * Parse track data from all available sources. Called, when import is
+    * initialized.
+    * @pageData page data as JSON object
+    */
+  this.parseSources = function(pageData) {
+    var self = this;
+    var sourceParsedCount = 0;
+
+    function incParsedCount() {
+      // increase parsed sources counter
+      if (++sourceParsedCount == sources.length) {
+        squashSources.call(self);
+        if (validSources > 1) {
+          addSources.call(self);
+        }
+        // all data parsed, proceed with import
+        self.enableImport();
+      }
+    }
+
+    function getTrackList(source) {
+      if (source.files && source.files.length > 0) {
+        // looks like data is already set
+        return;
+      }
+      source.files = [];
+      if (source.type == 'player') {
+        $.each(source.data, function(idx, val) {
+          var file = val.sources[0].file;
+          if (file) {
+            source.files.push(MBZ.Util.getLastPathSegment(file));
           }
+        });
+        // done
+        incParsedCount();
+      } else if (source.type == 'playlist') {
+        // needed, since we get redirected to differet subdomain
+        var url = 'https://cors-anywhere.herokuapp.com/archive.org:443'
+          + source.url;
+        $.get(url, function(data) {
+          //source.data = data;
+          var files = data.split('\n');
+          $.each(files, function(idx, file) {
+            file = MBZ.Util.getLastPathSegment(file.trim());
+            if (file.length > 0) {
+              source.files.push(file);
+            }
+          });
+        }, 'text').fail(function(jqxhr, textStatus, error) {
+          var err = textStatus + ', ' + error;
+          console.error("Request (" + url + ") failed: " + err);
+        }).always(function() {
+          // done
+          incParsedCount();
         });
       }
     }
-  },
+
+    // First try to parse data from the internal player as a basis. This data
+    // may be incomplete (cropped track names) so add it first and overwrite it
+    // later with more complete data from the page's JSON.
+    $.each(sources, function(idx, val) {
+      var source = sources[idx];
+      if (source.type == 'player') {
+        // parse some track data from the player
+        self.parseJSON.tracksFromPlayer.call(self, source.data);
+      }
+    });
+
+    // try to get missing data from page's JSON object
+    if (pageData.files) {
+      self.parseJSON.tracksFromPage.call(self, pageData);
+    }
+
+    // since track data is available, pase the track list for each source
+    $.each(sources, function(idx, val) {
+      getTrackList(val);
+    });
+  };
 
   /**
-    * Release data object finally passed on to MusicBrainz.
+    * Initialize and show the source's track data dialog. Also called, to update
+    * on track source data select change.
     */
-  release: new MBZ.Release(),
+  this.showSources = function() {
+    var self = this;
+    var trackTable = $('<table id="mbzImportTrackTable">'
+      + '<thead>'
+      + '<tr>'
+      + '<td>#</td><td>Title</td><td>Length</td>'
+      + '</tr></thead></table>');
+    var trackList = $('<tbody>');
+
+    $.each(sources[selectedSource].files,
+        function(idx, val) {
+      if (tracks[val]) {
+        var duration = data[val].dur;
+        duration = (duration ? MBZ.Util.msToHms(duration) : '&mdash;');
+        trackList.append($('<tr>'
+          + '<td>' + (idx + 1) + '</td>'
+          + '<td>' + tracks[val].tit + '</td>'
+          + '<td>' + duration + '</td>'
+          + '</tr>'));
+      } else {
+        console.warn('No data for file "' + val + '" found.');
+      }
+    });
+
+    trackTable.append(trackList);
+    contentHtml.html(trackTable);
+    this.dEl.show();
+  };
+
+  /**
+    * Remove duplicated sources which have the same track lists.
+    */
+  function squashSources() {
+    // go through all source's files
+    for (var i=0; i<sources.length; i++) {
+      var src = sources[i];
+      if (!src.dupe) {
+        var a = src.files;
+        if (!a || a.length == 0) {
+          src.dupe = true;
+          console.warn("Remove source '" + src.name + "' no files found.");
+        } else if ((i + 1) < sources.length) {
+          for (var j=i + 1; j<sources.length; j++) {
+            var b = sources[j];
+            if (!b.dupe) {
+              if (mbz.archive_org_importer.Release.Tracks
+                  .compareSourceFiles(a, b.files)) {
+                b.dupe = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // count valid sources
+    $.each(sources, function(idx, val) {
+      if (!val.dupe && val.files.length > 0) {
+        validSources++;
+      }
+    });
+  };
+
+  /**
+    * Update track metadata with new values. If a value is already set, it will
+    * get overwritten with the new one.
+    */
+  this.updateData = function(data) {
+    var isValid = mbz.archive_org_importer.Release.Tracks.isValidTrackData;
+
+    if (tracks[data.file]) {
+      var tData = tracks[data.file];
+      // update
+      if (isValid(data.med)) {
+        tData.med = data.med;
+      }
+      if (isValid(data.tit)) {
+        tData.tit = data.tit.trim();
+      }
+      if (isValid(data.idx)) {
+        tData.idx = data.idx;
+      }
+      if (isValid(data.dur)) {
+        tData.dur = data.dur;
+      }
+    } else {
+      // add new
+      tracks[data.file] = data;
+    }
+  };
+};
+/**
+  * Check if some track data is valid (i.e. not empty or undefined).
+  */
+mbz.archive_org_importer.Release.Tracks.isValidTrackData = function (dataEntry) {
+  if (typeof dataEntry !== 'undefined' && dataEntry != null) {
+    if (typeof dataEntry === 'string') {
+      if (dataEntry.trim().length > 0) {
+        return true;
+      }
+      return false;
+    } else {
+      return true;
+    }
+  }
+  return false;
+};
+/**
+  * Compare files for two sources.
+  */
+mbz.archive_org_importer.Release.Tracks.compareSourceFiles = function(a, b) {
+  if (a.length != b.length) {
+    return false;
+  }
+
+  for (var i=0; i<a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+};
+mbz.archive_org_importer.Release.Tracks.prototype = {
+  /**
+    * Get player JSON data as string.
+    * @return player JSON data or empty string, if nothing was found
+    */
+  getPlayerJSON: function() {
+    var pJSON = $('#midcol > script').text().trim()
+      .match(/Play\([\s\S]*?(\[{[\s\S]*}\])/);
+    if (pJSON && pJSON[1]) {
+      return pJSON[1];
+    }
+    return "";
+  }
 };
 
 mbz.archive_org_importer.init = function() {
@@ -708,7 +722,8 @@ mbz.archive_org_importer.init = function() {
         + 'text-align:right;'
       + '}'
     );
-    mbz.archive_org_importer.release.init();
+    //mbz.archive_org_importer.release.init();
+    new mbz.archive_org_importer.Release();
   } else if (pageType == 'bookmarks.php') {
     // check all bookmarks for MusicBrainz relations
     var links = $('.box>table>tbody a').filter(function(idx) {
