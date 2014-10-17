@@ -1,11 +1,11 @@
 ﻿// ==UserScript==
-// @name        MusicBrainz: Fix featured artists.
+// @name        MusicBrainz: Fix featured artists
 // @description Tries to detect artist names in artist and track fields and allows you to extract those. Found entries are added to the corresponding editor for fast adding.
 // @supportURL  https://github.com/JensBee/userscripts
 // @namespace   http://www.jens-bertram.net/userscripts/fix-featured-artists
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     2.0beta
+// @version     2.1beta
 //
 // @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
 //
@@ -272,7 +272,8 @@ mbz.fix_feat.BubbleEditor.prototype = {
           for (let idx in artists) {
             var aCell = $('<td colspan="3">');
             addButtons(aCell, idx);
-            target.after($('<tr class="MBZ-FixFeat MBZ-FixFeat-Item">').append(aCell));
+            target.after($('<tr class="MBZ-FixFeat MBZ-FixFeat-Item">')
+              .append(aCell));
           }
           break;
         case MBZ.BubbleEditor.types.trackArtistCredits:
@@ -524,20 +525,20 @@ mbz.fix_feat.acBubble = {
   */
 mbz.fix_feat.init = function() {
   mbz.fix_feat._init();
-  var path = window.location.pathname;
-  if (path.contains('/artist/')) {
-    if (path.endsWith('/split')) {
+  var pageType = MBZ.Util.getMbzPageType();
+  if (pageType.indexOf("artist") > -1) {
+    if (pageType.indexOf("split") > -1) {
       mbz.fix_feat.acBubble.init($('#entity-artist'));
     } else {
       mbz.fix_feat.artistPage.init();
     }
-  } else if (path.contains('/recording/')) {
+  } else if (pageType.indexOf("recording") > -1) {
     mbz.fix_feat.acBubble.init($('#entity-artist'));
-  } else if (path.contains('/release/')) {
+  } else if (pageType.indexOf("release") > -1) {
     // init observer, since component may need time to load
     var instance = new mbz.fix_feat.Release();
     MBZ.BubbleEditor.ArtistCredits.onAppear({cb: instance.init});
-  } else if (path.contains('/release-group/')) {
+  } else if (pageType.indexOf("release-group") > -1) {
     mbz.fix_feat.acBubble.init($('#entity-artist'));
   }
 };
