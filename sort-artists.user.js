@@ -1,13 +1,13 @@
-// ==UserScript==
+﻿// ==UserScript==
 // @name        MusicBrainz: Sort artists
 // @description Allows you to change the order of artist names in any of the multiple artists editors. NOTICE: This will remove any artist lookup data already present in the editor. You have to assign this manually again.
 // @supportURL  https://github.com/JensBee/userscripts
 // @namespace   http://www.jens-bertram.net/userscripts/sort-artists
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.1beta
+// @version     0.1.1beta
 //
-// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
 // @grant       none
 // @include     *://musicbrainz.org/recording/*/edit

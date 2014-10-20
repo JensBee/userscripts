@@ -5,9 +5,9 @@
 // @namespace   http://www.jens-bertram.net/userscripts/fix-featured-artists
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     2.1beta
+// @version     2.2beta
 //
-// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
 // @grant       none
 // @include     *://musicbrainz.org/recording/*/edit

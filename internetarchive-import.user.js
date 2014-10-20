@@ -5,11 +5,11 @@
 // @icon        http://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Internet_Archive_logo_and_wordmark.png/240px-Internet_Archive_logo_and_wordmark.png
 // @supportURL  https://github.com/JensBee/userscripts
 // @license     MIT
-// @version     0.4.6beta
+// @version     0.4.7beta
 //
 // @grant       none
 // @require     https://code.jquery.com/jquery-2.1.1.min.js
-// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
 // @include     *://archive.org/details/*
 // @include     *://archive.org/bookmarks.php

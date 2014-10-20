@@ -5,10 +5,10 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        http://blogfiles.wfmu.org/JI/FMAlogo_web_white.jpg
 // @license     MIT
-// @version     0.2beta
+// @version     0.2.1beta
 //
 // @grant       none
-// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js
+// @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
 // @include     *://*.freemusicarchive.org/music/*
 // @include     *://freemusicarchive.org/music/*
