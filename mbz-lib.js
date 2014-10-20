@@ -5,7 +5,7 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.3beta
+// @version     0.3.1beta
 //
 // @grant       none
 // ==/UserScript==
@@ -1063,6 +1063,7 @@ if (MBZ) {
     var form = $('<form method="post" id="' + MBZ.Release._form.baseName + '-'
       + (MBZ.Release._form.count++) + '" target="_blank" action="'
       + MBZ.Release._form.target + '" acceptCharset="UTF-8"></form>');
+    var submitted = false;
 
     this.data = {
       annotation: '', // content
@@ -1173,8 +1174,11 @@ if (MBZ) {
       * Submit data to musicbrainz.
       */
     this.submitRelease = function() {
-      buildForm(this.data);
-      $('body').append(form);
+      if (!submitted) {
+        buildForm(this.data);
+        $('body').append(form);
+        submitted = true;
+      }
       form.submit();
     };
   };
