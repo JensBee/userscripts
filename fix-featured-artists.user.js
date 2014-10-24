@@ -5,7 +5,7 @@
 // @namespace   http://www.jens-bertram.net/userscripts/fix-featured-artists
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     2.3beta
+// @version     2.3.1beta
 //
 // @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
@@ -26,8 +26,7 @@
 // @include     *://*.musicbrainz.org/artist/*/split
 // ==/UserScript==
 //**************************************************************************//
-var mbz = mbz || {};
-var sharedMbz = unsafeWindow.mbz || {};
+var mbz = {};
 mbz.fix_feat = {
   splitPoints: [ // order matters
     '\\s&\\s',
