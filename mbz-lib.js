@@ -5,7 +5,7 @@
 // @supportURL  https://github.com/JensBee/userscripts
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     0.3.1beta
+// @version     0.4beta
 //
 // @grant       none
 // ==/UserScript==
@@ -29,7 +29,7 @@ var loader = function(lib) {
   */
 var thisScript = {
   id: 'mbz-lib',
-  version: '0.3beta',
+  version: '0.4beta',
   loader: loader
 };
 
@@ -546,7 +546,6 @@ if (MBZ) {
       var onAppearCb = [];
       var onChangeCb = [];
       var that = instance;
-      var stagedLoading = false;
       var noBubble = false;
 
       function mutated(mutationRecords) {
@@ -565,16 +564,6 @@ if (MBZ) {
           var bubble = $(that._bubble.id);
           if (bubble && bubble.length ==1) {
             that._bubble.el = bubble;
-            if (stagedLoading) {
-              // switch to real bubble element from container
-              console.debug("StagedLoading: switching observer to bubble",
-                bubble);
-              observer.disconnect();
-              observer.observe(bubble.get(0), {
-                childList: true,
-                subtree: true
-              });
-            }
             hasAppeared();
           }
         }
@@ -585,6 +574,16 @@ if (MBZ) {
         while (onAppearCb.length > 0) {
           onAppearCb.pop().cb(that._bubble.el);
         }
+        // check if someone is listening for changes
+        if (onChangeCb.length == 0) {
+          if (observer) {
+            console.debug("Remove bubble observer - noone listening.");
+            observer.disconnect();
+            disconnected = true;
+          } else {
+            console.debug("Not attaching bubble observer - noone listening.");
+          }
+        }
       };
 
       function init() {
@@ -594,14 +593,11 @@ if (MBZ) {
           that._bubble.el = bubble;
           e = bubble.get(0);
           hasAppeared();
-        } else if (that._bubble.containerId) {
-          stagedLoading = true;
-          e = $(that._bubble.containerId).get(0);
         }
 
         if (!e) {
           console.debug(that.type,
-            "Bubble not found and no container specified. Giving up.");
+            "Bubble not found. Giving up.");
           noBubble = true;
         } else {
           observer = new MutationObserver(mutated);
@@ -685,7 +681,6 @@ if (MBZ) {
     this._bubble = {
       el: null,
       id: '#artist-credit-bubble',
-      containerId: '#release-editor',
       observer: null
     };
 
@@ -743,7 +738,19 @@ if (MBZ) {
       }
     };
 
-    this._bubble.observer = new this.Observer(this);
+    /**
+      * Called when bubble has appeared to call the real observer.
+      */
+    function attachObserver() {
+      this._bubble.observer = new this.Observer(this);
+    }
+
+    // wait until bubble container appears
+    MBZ.ReleaseEditor.onAppear({
+      cb: attachObserver,
+      scope: this,
+      selector: this._bubble.id
+    });
   };
 
   /**
@@ -804,6 +811,66 @@ if (MBZ) {
     };
 
     this._bubble.observer = new this.Observer(this);
+  };
+
+  MBZ.impl.ReleaseEditor = function() {
+    var observer = new MutationObserver(mutated);
+    var e = $('#release-editor');
+    var onAppearCb = [];
+    var observing = false;
+
+    function checkExistance(cbConf) {
+      var result = e.find(cbConf.selector);
+      if (result.length > 0) {
+        if (cbConf.scope) {
+          cbConf.cb.call(cbConf.scope, result);
+        } else {
+          cbConf.cb(result);
+        }
+        return true;
+      }
+      return false;
+    };
+
+    function checkObserver() {
+      if (onAppearCb.length > 0) {
+        if (!observing) {
+          observer.observe(e.get(0), {
+            childList: true,
+            subtree: true
+          });
+          observing = true;
+          console.debug("Attach ReleaseEditor observer - new listener.");
+        }
+      } else if (observing) {
+          observer.disconnect();
+          observing = false;
+          console.debug("Remove ReleaseEditor observer - noone listening.");
+      }
+    };
+
+    function mutated(mutationRecords) {
+      var surviving = [];
+      for (var cbConf of onAppearCb) {
+        if (!checkExistance(cbConf)) {
+          surviving.push(cbConf);
+        }
+      }
+      onAppearCb = surviving;
+      checkObserver();
+    };
+
+    /**
+      * cbConf[selector] element selector to search for
+      * cbConf[cb] callback function
+      * cbConf[scope] optional scope for callback
+      */
+    this.onAppear = function(cbConf) {
+      if (!checkExistance(cbConf)) {
+        checkObserver();
+        onAppearCb.push(cbConf);
+      }
+    };
   };
 
   /**
@@ -1018,6 +1085,12 @@ if (MBZ) {
     // initialize the following only on MusicBrainz pages
     var pageType = MBZ.Util.getMbzPageType();
     if (pageType.length > 0) {
+      // release editor
+      if (pageType.indexOf("release") > -1 || pageType.indexOf("edit") > -1) {
+        console.debug("Loading MBZ.ReleaseEditor");
+        MBZ.ReleaseEditor = new MBZ.impl.ReleaseEditor();
+      }
+
       // bubble editors
       if (pageType.indexOf("edit") > -1 || pageType.indexOf("add") > -1) {
         // track editor only, if we edit releases
