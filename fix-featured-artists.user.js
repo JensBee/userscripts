@@ -5,7 +5,7 @@
 // @namespace   http://www.jens-bertram.net/userscripts/fix-featured-artists
 // @icon        https://wiki.musicbrainz.org/-/images/3/39/MusicBrainz_Logo_Square_Transparent.png
 // @license     MIT
-// @version     2.2beta
+// @version     2.3beta
 //
 // @require     https://greasyfork.org/scripts/5140-musicbrainz-function-library/code/MusicBrainz%20function%20library.js?version=21997
 //
@@ -34,15 +34,12 @@ mbz.fix_feat = {
     '\\s+\\s',
     ',\\s',
     '\\s/\\s',
-    '\\sand\\s',
-    '\\swith\\s',
-    '\\smeets\\s',
-    '\\s\\(feat\\.\\s',
-    '\\s\\(ft\\.\\s',
-    '\\s\\(featuring\\s',
-    '\\sfeat\\.\\s',
-    '\\sft\\.\\s',
-    '\\sfeaturing\\s'
+    '\\s\\(?and\\s',
+    '\\s\\(?with\\s',
+    '\\s\\(?meets\\s',
+    '\\s\\(?feat\\.\\s',
+    '\\s\\(?ft\\.\\s',
+    '\\s\\(?featuring\\s',
   ],
   splitPointsRx : [],
   btn: {
@@ -73,7 +70,7 @@ mbz.fix_feat = {
   _init: function() {
     // create RegEx objects
     for (let splitPoint of this.splitPoints) {
-      this.splitPointsRx.push(new RegExp(splitPoint, 'g'));
+      this.splitPointsRx.push(new RegExp(splitPoint, 'gi'));
     }
     // append style
     MBZ.Html.addStyle(''
